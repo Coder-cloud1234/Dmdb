@@ -1,2 +1,3 @@
 # Dmdb
-Distributed memory database implemented by C++
+Distributed memory database implemented by C++.
+Now it is being developing
