@@ -1,8 +1,10 @@
+#pragma once
+
 #include <string>
 
 #include "DmdbReplicationManager.hpp"
 
-#pragma once
+
 
 namespace Dmdb {
 class DmdbMasterReplicationManager : public DmdbReplicationManager {
