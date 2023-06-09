@@ -1,11 +1,13 @@
+#pragma once
+
 #include <string>
 
 #include "DmdbReplicationManager.hpp"
-#include "DmdbClientManager.hpp"
 
-#pragma once
 
 namespace Dmdb {
+
+class DmdbClientContact;
 
 class DmdbReplicaReplicationManager : public DmdbReplicationManager {
 
@@ -14,8 +16,8 @@ private:
     std::string _master_hostname;
     int _master_port_for_client;
     int _repl_timeout;
-    DmdbClientManager *_current_master;
-    DmdbClientManager *_last_master;
+    DmdbClientContact *_current_master;
+    DmdbClientContact *_last_master;
     int _repl_status;
     int _repl_sync_socket_fd;
     int _repl_sync_tmp_file_fd;

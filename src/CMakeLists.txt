@@ -1,0 +1,6 @@
+if(MAKE_TEST)
+    set(CMAKE_BUILD_TYPE "Debug")
+    set(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -pg -ggdb")
+endif()  
+aux_source_directory(. DIR_LIB_SRCS)
+add_library (Dmdb ${DIR_LIB_SRCS})

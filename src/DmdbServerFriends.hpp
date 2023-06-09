@@ -1,0 +1,14 @@
+#pragma once
+
+namespace Dmdb {
+struct DmdbEventMangerRequiredComponent;
+struct DmdbClientManagerRequiredComponent;
+struct DmdbClientContactRequiredComponent;
+struct DmdbCommandRequiredComponent;
+struct DmdbRDBRequiredComponents;
+bool GetDmdbEventMangerRequiredComponents(DmdbEventMangerRequiredComponent &components);
+bool GetDmdbClientManagerRequiredComponent(DmdbClientManagerRequiredComponent &components);
+bool GetDmdbClientContactRequiredComponent(DmdbClientContactRequiredComponent &components);
+bool GetDmdbCommandRequiredComponents(DmdbCommandRequiredComponent &components);
+bool GetDmdbRDBRequiredComponents(DmdbRDBRequiredComponents &components);
+}
