@@ -94,7 +94,7 @@ DmdbValue::~DmdbValue() {
 }
 
 
-DmdbDatabaseManager::DmdbDatabaseManager() {}
+DmdbDatabaseManager::DmdbDatabaseManager() : _last_expire_ms(DmdbUtil::GetCurrentMs()), _expire_interval_ms(1000) {}
 
 DmdbDatabaseManager::~DmdbDatabaseManager() {
     std::unordered_map<DmdbKey, DmdbValue*, HashFunction<DmdbKey>, EqualFunction<DmdbKey>>::iterator it;
@@ -196,7 +196,12 @@ size_t DmdbDatabaseManager::GetDatabaseSize() {
     return _database.size();
 }
 
-/* The format of a pair is as below:
+void DmdbDatabaseManager::SetExpireIntervalForDB(uint64_t ms) {
+    _expire_interval_ms = ms;
+}
+
+/* When using this funcion, modifying _database should be forbidden to avoid invalid iterator.  
+ * The format of a pair is as below:
  * Expire_time: 8 bytes
  * Key_length: 4 bytes
  * Key_name: 
@@ -244,5 +249,44 @@ bool DmdbDatabaseManager::GetNPairsFormatRawSequential(uint8_t* buf, size_t bufL
     }
     return false;
 }
+
+size_t DmdbDatabaseManager::RemoveExpiredKeys() {
+    size_t deletedNum = 0;
+    uint64_t currentMs = DmdbUtil::GetCurrentMs();
+    if(_last_expire_ms + _expire_interval_ms > currentMs) {
+        return deletedNum;
+    }
+    std::unordered_map<DmdbKey, DmdbValue*, HashFunction<DmdbKey>, EqualFunction<DmdbKey>>::iterator it = _database.begin();
+    /* Use it to delete keys to avoid invalid iterator */
+    std::vector<std::string> delKeys;
+
+    while(it != _database.end()) {
+        if(it->first.GetExpireTime() != 0 && it->first.GetExpireTime() <= currentMs) {
+            delKeys.emplace_back(it->first.GetName());
+        }
+        it++;
+    }
+
+    for(size_t i = 0; i < delKeys.size(); ++i) {
+        if(DelKey(delKeys[i]) == true) {
+            deletedNum++;
+        }
+    }
+    _last_expire_ms = DmdbUtil::GetCurrentMs();
+
+    return deletedNum;
+}
+
+#ifdef MAKE_TEST
+void DmdbDatabaseManager::PrintDatabase() {
+    std::cout << "***Database begin***" << std::endl;
+    std::unordered_map<DmdbKey, DmdbValue*, HashFunction<DmdbKey>, EqualFunction<DmdbKey>>::iterator it = _database.begin();
+    while(it != _database.end()) {
+        std::cout << "key:" << it->first.GetName() << ", expire time:" << it->first.GetExpireTime() << ", value:" << it->second->GetValueString() << std::endl;
+        it++;
+    }   
+    std::cout << "***Database end***" << std::endl;
+}
+#endif
 
 }

@@ -37,6 +37,8 @@ enum class FieldOfSavedPair {
 class DmdbRDBManager {
 
 public:
+    bool IsRDBChildAlive();
+    bool KillChildProcessIfAlive();
     bool SaveDatabaseToDisk();
     bool LoadDatabaseFromDisk();
     std::string GetRDBFile();
@@ -50,6 +52,7 @@ private:
     bool _is_rdb_loading;
     std::string _rdb_file;
     uint8_t _rdb_version;
+    pid_t _rdb_child_pid;
     static DmdbRDBManager* _instance;
 };
 

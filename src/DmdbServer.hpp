@@ -27,6 +27,7 @@ class DmdbClusterManager;
 class DmdbClientManager;
 class DmdbEventManager;
 class DmdbRDBManager;
+
 struct DmdbEventMangerRequiredComponent;
 struct DmdbClientManagerRequiredComponent;
 struct DmdbClientContactRequiredComponent;
@@ -39,6 +40,7 @@ class DmdbServer {
 public:
     static DmdbServer* GetUniqueServerInstance(std::string &baseConfigFile);
     void DoService();
+    void ShutdownServerBySignal(int sig);
 #ifdef MAKE_TEST
     void PrintServerConfig();
 #endif
@@ -52,8 +54,10 @@ private:
     DmdbServer& operator=(const DmdbServer&);
     void InitWithConfigFile();
     bool LoadDataFromDisk();
+    void ShutDownServerIfNeed();
     
     bool StartServer();
+    void SetupSignalHandler(void (*fun)(int));
     
     uint8_t _server_version = SERVER_VERSION;
 
@@ -68,7 +72,7 @@ private:
     std::unordered_map<std::string, DmdbCommand*> _dmdb_commands;
     
     size_t _self_memory_cost_init;
-    
+    bool _plan_to_shutdown;
     bool _is_loading_db_file;
     time_t _server_start_time;
     long long _processed_commands_num;
@@ -106,6 +110,7 @@ private:
     
     unsigned long long _memory_max_available_size;
     bool _is_cluster_mode;
+    // DmdbServerTerminateSignalHandler* _terminate_signal_handler;
     DmdbClusterManager* _cluster_manager;
     DmdbClientManager* _client_manager;
     DmdbDatabaseManager* _database_manager;
@@ -118,4 +123,5 @@ private:
     std::string _ipv4;
     int _tcp_back_log;
 };
+
 }
