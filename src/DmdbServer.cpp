@@ -1,3 +1,5 @@
+#include <signal.h>
+
 #include "DmdbServer.hpp"
 #include "DmdbDatabaseManager.hpp"
 #include "DmdbCommand.hpp"
@@ -10,6 +12,9 @@
 #include "DmdbEventManager.hpp"
 #include "DmdbEventManagerCommon.hpp"
 #include "DmdbRDBManager.hpp"
+#include "DmdbServerTerminateSignalHandler.hpp"
+
+
 
 namespace Dmdb {
 
@@ -21,6 +26,55 @@ DmdbServer* DmdbServer::GetUniqueServerInstance(std::string &baseConfigFile) {
         _self_instance = new DmdbServer(baseConfigFile);
     }
     return _self_instance;
+}
+
+void DmdbServer::ShutDownServerIfNeed() {
+    if(_plan_to_shutdown) {
+        _server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
+                                         "Server is shutting down");
+        _rdb_manager->KillChildProcessIfAlive();
+        /* TODO: kill aof child if enabled and send all data to slaves if master */
+
+        bool isSaveOk = _rdb_manager->SaveDatabaseToDisk();
+        if(!isSaveOk) {
+            _server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
+                                            "Failed to save RDB data to disk, we will have another try");
+            return;
+        }
+
+        _server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
+                                         "Bye bye!");
+        // TODO: delete _cluster_manager;
+        // delete _terminate_signal_handler;
+        delete _client_manager;
+        delete _database_manager;
+        delete _server_logger;
+        // TODO: delete _repl_manager;
+        delete _rdb_manager;
+        delete _event_manager;
+        exit(0);
+    }
+}
+
+void DmdbServer::ShutdownServerBySignal(int sig) {
+    std::string logContent;
+    switch(sig) {
+        case SIGINT: {
+            logContent = "Received signal SIGINT!";
+            break;
+        }
+        case SIGTERM: {
+            logContent = "Received signal SIGTERM!";
+            break;
+        }
+    }
+    if(_plan_to_shutdown && sig == SIGINT) {
+        _server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE, "You insist exiting immediately!");
+        /* TODO: Remove all the tmp files(aof, rdb and so on) */
+        exit(1);
+    }
+    _server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE, logContent.c_str());
+    _plan_to_shutdown = true;
 }
 
 void DmdbServer::InitWithConfigFile() {
@@ -165,7 +219,7 @@ void DmdbServer::InitWithConfigFile() {
     } else {
         std::string strMemoryMaxAvailableSize = parasMap["memory_max_available_size"][0];
         _memory_max_available_size = strtoull(strMemoryMaxAvailableSize.c_str(), nullptr, 10);
-        if(_memory_max_available_size <= 0) {
+        if(errno == ERANGE || _memory_max_available_size <= 0) {
             DmdbUtil::ServerExitWithErrMsg("Invalid memory_max_available_size!");
         }
     }
@@ -176,6 +230,14 @@ void DmdbServer::InitWithConfigFile() {
         bool isValid = DmdbUtil::GetBoolFromString(strIsClusterMode, _is_cluster_mode);
         if(!isValid)
             DmdbUtil::ServerExitWithErrMsg("Invalid is_cluster_mode!");
+    }
+
+    if(parasMap.find("expire_interval_ms") != parasMap.end()) {
+        uint64_t expireIntervalMs = strtoull(parasMap["expire_interval_ms"][0].c_str(), nullptr, 10);
+        if(errno == ERANGE) {
+            DmdbUtil::ServerExitWithErrMsg("Invalid expire_interval_ms!");
+        }
+        _database_manager->SetExpireIntervalForDB(expireIntervalMs);
     }       
 }
 
@@ -187,13 +249,27 @@ bool DmdbServer::LoadDataFromDisk() {
 
 
 bool DmdbServer::StartServer() {
+    SetupSignalHandler(DmdbServerTerminateSignalHandler::TerminateSignalHandle);
     LoadDataFromDisk();
     if(!_client_manager->StartToListenIPV4())
         return false;
     return true;
 }
 
+void DmdbServer::SetupSignalHandler(void (*fun)(int)) {
+    struct sigaction act;
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    act.sa_handler = fun;
+    sigaction(SIGTERM, &act, NULL);
+    sigaction(SIGINT, &act, NULL);
+}
+
 DmdbServer::DmdbServer(std::string &baseConfigFile) {
+    _plan_to_shutdown = false;
+    DmdbServerTerminateSignalHandler::SetServerInstance(this);
     _base_config_file_loader = new DmdbConfigFileLoader(baseConfigFile);
     _client_manager = DmdbClientManager::GetUniqueClientManagerInstance();
     _database_manager = new DmdbDatabaseManager();
@@ -207,9 +283,14 @@ void DmdbServer::DoService() {
         _event_manager->ProcessFiredEvents(100);
         _client_manager->ProcessClientsRequest();
         _client_manager->closeInvalidClients();
+        _database_manager->RemoveExpiredKeys();
+        ShutDownServerIfNeed();
     }
     
 }
+
+/* TODO: add a destructor for DmdbServer */
+
 
 #ifdef MAKE_TEST
 void DmdbServer::PrintServerConfig() {

@@ -1,3 +1,6 @@
+#include <sys/types.h>
+#include <signal.h>
+
 #include <fstream>
 
 #include "DmdbRDBManager.hpp"
@@ -27,6 +30,25 @@ void PrintData(uint8_t* buf, size_t bufLen) {
 }
 #endif
 
+bool DmdbRDBManager::IsRDBChildAlive() {
+    return _rdb_child_pid > 0;
+}
+
+bool DmdbRDBManager::KillChildProcessIfAlive() {
+    if(_rdb_child_pid > 0) {
+        kill(_rdb_child_pid, SIGUSR1);
+        /* TODO: remove RDB tmp file? */
+
+        DmdbRDBRequiredComponents components;
+        GetDmdbRDBRequiredComponents(components);
+        components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE, 
+                                                    "Killed the running RDB child process:%u",
+                                                    _rdb_child_pid);
+        _rdb_child_pid = -1;
+        return true;
+    }
+    return false;
+}
 
 void DmdbRDBManager::GenerateRDBHeader(std::fstream &fs, DmdbRDBRequiredComponents &components, uint64_t &crcCode) {
     /* This will be optimized in the future */
@@ -59,6 +81,8 @@ void DmdbRDBManager::GenerateRDBHeader(std::fstream &fs, DmdbRDBRequiredComponen
  * EOF: 1 byte unsigned char
  * Checksum: 8 bytes unsigned long long int*/
 bool DmdbRDBManager::SaveDatabaseToDisk() {
+    /* TODO: Use RDB tmp file then rename it? */
+
     DmdbRDBRequiredComponents components;
     GetDmdbRDBRequiredComponents(components);
     std::fstream rdbStream;
@@ -327,7 +351,7 @@ bool DmdbRDBManager::LoadDatabaseFromDisk() {
 corrupted_error:
     components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::WARNING,
                                                 "RDB file:%s has been corrupted",
-                                                _rdb_file);
+                                                _rdb_file.c_str());
     components._database_manager->Destroy();
     rdbStream.close();
     return false;
@@ -349,8 +373,11 @@ DmdbRDBManager* DmdbRDBManager::GetUniqueRDBManagerInstance(const std::string &f
 DmdbRDBManager::DmdbRDBManager(const std::string &file) {
     _rdb_file = file;
     _rdb_version = RDB_VERSION;
+    _rdb_child_pid = -1;
 }
 
-
+DmdbRDBManager::~DmdbRDBManager() {
+    
+}
 
 }

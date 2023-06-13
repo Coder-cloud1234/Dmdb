@@ -68,11 +68,18 @@ public:
     void GetKeysByPattern(const std::string &patternStr, std::vector<DmdbKey> &keys);
     size_t GetDatabaseSize();
     bool GetNPairsFormatRawSequential(uint8_t* buf, size_t bufLen, size_t &copiedSize, size_t expectedAmount, size_t &actualAmount);
+    size_t RemoveExpiredKeys();
+    void SetExpireIntervalForDB(uint64_t ms);
     void Destroy();
+#ifdef MAKE_TEST
+    void PrintDatabase();
+#endif
     DmdbDatabaseManager();
     ~DmdbDatabaseManager();
 private:
     std::unordered_map<DmdbKey, DmdbValue*, HashFunction<DmdbKey>, EqualFunction<DmdbKey>> _database;
+    uint64_t _last_expire_ms;
+    uint64_t _expire_interval_ms;
 };
 
 }

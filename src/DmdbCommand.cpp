@@ -228,13 +228,34 @@ bool DmdbSetCommand::Execute(DmdbClientContact &clientContact) {
     std::vector<std::string> valArray;
     valArray.emplace_back(_parameters[1]);
     std::string msg;
+/*
+#ifdef MAKE_TEST
+    std::cout << "***********************************************" << std::endl;
+    std::cout << "Parameters: ";
+    for(size_t i = 0; i < _parameters.size(); ++i) {
+        std::cout << _parameters[i] << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Before set executed:" << std::endl;
+    components._server_database_manager->PrintDatabase();
+    std::cout << "IsNX:" << isNx << " Value:" << value << std::endl;
+#endif
+*/
     if((isNx&&value!=nullptr) || (isXx&&value==nullptr) ) {
         msg = "$-1\r\n";
         clientContact.AddReplyData2Client(msg);
         return true;
     }
+
     components._server_database_manager->SetKeyValuePair(_parameters[0], valArray,
                                                          DmdbValueType::STRING, expireTime);
+/*
+#ifdef MAKE_TEST
+    std::cout << "After set executed:" << std::endl;
+    components._server_database_manager->PrintDatabase();
+    std::cout << "***********************************************" << std::endl;
+#endif
+*/
     msg = "+OK\r\n";
     clientContact.AddReplyData2Client(msg);
     return true;    
