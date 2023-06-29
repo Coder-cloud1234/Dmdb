@@ -11,12 +11,14 @@ namespace Dmdb {
 class DmdbEventManager;
 class DmdbClientContact;
 class DmdbServerLogger;
+class DmdbReplicationManager;
 /* All these members matches a member of DmdbServer, they may be necessary for 
  * DmdbClientManger's operations, the pointer members can affect DmdbServer's 
  * members */
 struct DmdbClientManagerRequiredComponent {
     DmdbEventManager *_event_manager;
     DmdbServerLogger *_server_logger;
+    DmdbReplicationManager *_repl_manager;
     std::string _server_ipv4;
     int _server_tcp_backlog;
 
@@ -40,15 +42,17 @@ public:
     void SetInBufMaxSizeForClient(size_t inBufMaxSize);
     void SetPassword(const std::string &password);
     std::string GetNameOfClient(int fd);
+    DmdbClientContact* GetClientContactByFd(int fd);
     int GetPortForClient();
     int GetTimeoutForClient();
     size_t GetInBufMaxSizeForClient();
     size_t ProcessClientsRequest();
-    size_t closeInvalidClients();
+    size_t CloseInvalidClients();
     bool AreClientsPaused();
     std::string GetServerPassword();
     bool PauseClients(uint64_t pauseMs);
     bool UnpauseClients();
+    void ProcessClients();
     ~DmdbClientManager();
 private:
     DmdbClientManager();

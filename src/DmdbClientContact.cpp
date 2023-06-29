@@ -2,6 +2,7 @@
 #include "DmdbServerFriends.hpp"
 #include "DmdbClientManager.hpp"
 #include "DmdbServerLogger.hpp"
+#include "DmdbReplicationManager.hpp"
 #include "DmdbCommand.hpp"
 
 
@@ -16,11 +17,13 @@ DmdbClientContact::DmdbClientContact(int fd, const std::string &ip, int port) {
     _client_name = ip+":"+std::to_string(port);
     _client_status = 0;
     _process_pos_of_input_buf = 0;
+    _is_chekced = false;
+    _is_multi_state = false;
 }
 
 DmdbClientContact::~DmdbClientContact() {
     // close(_client_socket);
-    delete _current_command;
+    // delete _current_command;
 }
 
 std::string DmdbClientContact::GetClientName() {
@@ -160,7 +163,8 @@ bool DmdbClientContact::ProcessOneMultiProtocolRequest(size_t &startPos) {
             _current_command = DmdbCommand::GenerateCommandByName(parameter);
             if(_current_command == nullptr) {
                 AddReplyData2Client("-ERR Unknown command:" + parameter + "\r\n");
-            }
+            } 
+
         } else {
             if(_current_command != nullptr)
                 _current_command->AppendCommandPara(parameter);
@@ -204,6 +208,10 @@ uint32_t DmdbClientContact::GetStatus() {
     return _client_status;
 }
 
+size_t DmdbClientContact::GetMultiQueueSize() {
+    return _exec_command_queue.size();
+}
+
 DmdbCommand* DmdbClientContact::PopCommandOfExec() {
     DmdbCommand* command = nullptr;
     if(_exec_command_queue.size() > 0) {
@@ -216,13 +224,22 @@ DmdbCommand* DmdbClientContact::PopCommandOfExec() {
 bool DmdbClientContact::ProcessClientRequest() {
     DmdbClientContactRequiredComponent components;
     GetDmdbClientContactRequiredComponent(components);
-    while(!components._client_manager->AreClientsPaused() &&
+    size_t lastProcessedPos = _process_pos_of_input_buf;
+
+    /* We shouldn't pause the replication from master */
+    while(!components._repl_manager->IsWaitting(this) && 
+          (!components._client_manager->AreClientsPaused() || components._repl_manager->IsMyMaster(this->GetClientName())) &&
           _client_input_buffer.length() > _process_pos_of_input_buf && 
           ProcessOneMultiProtocolRequest(_process_pos_of_input_buf) == true) {
-        if(_current_command == nullptr)
+        if(_current_command == nullptr) {
+            lastProcessedPos = _process_pos_of_input_buf;
             continue;
+        }
+            
         std::string commandNameLower = _current_command->GetName();
         std::transform(commandNameLower.begin(), commandNameLower.end(), commandNameLower.begin(), tolower);        
+        /* If this is a master client, _is_chekced will be set to true once the connection is created,
+         * and master client won't replicate auth command to its replicas */
         if(!_is_chekced) {
             if(commandNameLower != "auth") {
                 std::string errMsg = "-ERR unauthenticated\r\n";
@@ -247,6 +264,7 @@ bool DmdbClientContact::ProcessClientRequest() {
                                         
                 }
             }
+            lastProcessedPos = _process_pos_of_input_buf;
         } else {
             /*
             if(commandNameLower == "multi") {
@@ -254,18 +272,54 @@ bool DmdbClientContact::ProcessClientRequest() {
                 continue;
             }
             */ 
+            bool isWCommand = DmdbCommand::IsWCommand(_current_command->GetName());
+            
+            if(!components._is_myself_master && isWCommand && components._repl_manager->GetMasterClientContact() != this) {
+                AddReplyData2Client("-ERR Command:" + _current_command->GetName() + " is forbidden in slave\r\n");
+                delete _current_command;
+                _current_command = nullptr;
+                lastProcessedPos = _process_pos_of_input_buf;
+                continue;
+            }
+            /* If it is in multi state, we don't have to record lastProcessedPos because we will replicate the whole multi-exec
+             * block if I am a master. First, replicate multi, then replicate the remaining. */
             if(_is_multi_state && commandNameLower != "exec") {
                 _exec_command_queue.push(_current_command);
+                AddReplyData2Client("+QUEUED\r\n");
+                if(components._is_myself_master) {
+                    components._repl_manager->ReplicateDataToSlaves(_client_input_buffer.substr(lastProcessedPos, _process_pos_of_input_buf - lastProcessedPos));
+                }
+                lastProcessedPos = _process_pos_of_input_buf;
                 _current_command = nullptr;
                 continue;
             }
             _current_command->Execute(*this);
+            if (components._is_myself_master && (_current_command->GetName() == "multi" || _current_command->GetName() == "exec" || isWCommand)) {
+                components._repl_manager->ReplicateDataToSlaves(_client_input_buffer.substr(lastProcessedPos, _process_pos_of_input_buf - lastProcessedPos));
+            }
+
+            if(components._repl_manager->IsMyMaster(this->GetClientName())) {
+                components._repl_manager->SetReplayOkSize(_process_pos_of_input_buf - lastProcessedPos);
+            }
+            lastProcessedPos = _process_pos_of_input_buf;
         }
         delete _current_command;
         _current_command = nullptr;
     }
     ClearProcessedData();
     return true;
+}
+
+bool DmdbClientContact::IsChecked() {
+    return _is_chekced;
+}
+
+std::string DmdbClientContact::GetIp() {
+    return _client_ip;
+}
+
+int DmdbClientContact::GetPort() {
+    return _client_port;
 }
 
 #ifdef MAKE_TEST

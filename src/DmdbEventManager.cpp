@@ -12,6 +12,8 @@ DmdbEventManager::DmdbEventManager(uint16_t maxNum) {
     _max_fd_num = maxNum;
     _fired_events = new epoll_event[_max_fd_num]{0};
     _is_inited = false;
+    _epfd = -1;
+    _epoll_wait_timeout = 100;
 }
 
 DmdbEventManager* DmdbEventManager::GetUniqueEventManagerInstance(uint16_t maxNum) {
@@ -165,6 +167,14 @@ bool DmdbEventManager::ProcessFiredEvents(int timeout) {
     }
     memset(_fired_events, 0, sizeof(epoll_event)*ret);
     return true;
+}
+
+void DmdbEventManager::SetEpollWaitTimeout(int timeout) {
+    _epoll_wait_timeout = timeout;
+}
+
+void DmdbEventManager::WaitAndProcessEvents() {
+    ProcessFiredEvents(_epoll_wait_timeout);
 }
 
 }

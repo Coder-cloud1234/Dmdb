@@ -31,6 +31,7 @@ public:
     };
     void LoadConfigFile(std::unordered_map<std::string, std::vector<std::string>> &parasMap);
     DmdbConfigFileLoader(const std::string &configFile);
+    ~DmdbConfigFileLoader();
 private: 
     std::string _config_file;
     LineRet GetParaNameFromLine(const std::string &fileLine, std::string &paraName);

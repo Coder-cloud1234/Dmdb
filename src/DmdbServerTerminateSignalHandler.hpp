@@ -1,7 +1,8 @@
+#pragma once
+
 namespace Dmdb {
     class DmdbServer;
 }
-
 
 class DmdbServerTerminateSignalHandler {
 public:

@@ -6,9 +6,11 @@ struct DmdbClientManagerRequiredComponent;
 struct DmdbClientContactRequiredComponent;
 struct DmdbCommandRequiredComponent;
 struct DmdbRDBRequiredComponents;
+struct DmdbRepilcationManagerRequiredComponents;
 bool GetDmdbEventMangerRequiredComponents(DmdbEventMangerRequiredComponent &components);
 bool GetDmdbClientManagerRequiredComponent(DmdbClientManagerRequiredComponent &components);
 bool GetDmdbClientContactRequiredComponent(DmdbClientContactRequiredComponent &components);
 bool GetDmdbCommandRequiredComponents(DmdbCommandRequiredComponent &components);
 bool GetDmdbRDBRequiredComponents(DmdbRDBRequiredComponents &components);
+bool GetDmdbRepilcationManagerRequiredComponents(DmdbRepilcationManagerRequiredComponents &components);
 }

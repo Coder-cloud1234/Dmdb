@@ -33,14 +33,17 @@ struct DmdbClientManagerRequiredComponent;
 struct DmdbClientContactRequiredComponent;
 struct DmdbCommandRequiredComponent;
 struct DmdbRDBRequiredComponents;
+struct DmdbRepilcationManagerRequiredComponents;
 
 const uint8_t SERVER_VERSION = 1;
 
 class DmdbServer {
 public:
     static DmdbServer* GetUniqueServerInstance(std::string &baseConfigFile);
+    static void ClearSignalHandler();
     void DoService();
     void ShutdownServerBySignal(int sig);
+    ~DmdbServer();
 #ifdef MAKE_TEST
     void PrintServerConfig();
 #endif
@@ -49,6 +52,7 @@ public:
     friend bool GetDmdbClientContactRequiredComponent(DmdbClientContactRequiredComponent &components);
     friend bool GetDmdbCommandRequiredComponents(DmdbCommandRequiredComponent &components);
     friend bool GetDmdbRDBRequiredComponents(DmdbRDBRequiredComponents &components);
+    friend bool GetDmdbRepilcationManagerRequiredComponents(DmdbRepilcationManagerRequiredComponents &components);
 private:
     DmdbServer(std::string &baseConfigfile);
     DmdbServer& operator=(const DmdbServer&);
@@ -58,23 +62,25 @@ private:
     
     bool StartServer();
     void SetupSignalHandler(void (*fun)(int));
+    bool IsMyselfChild();
     
-    uint8_t _server_version = SERVER_VERSION;
+    uint8_t _server_version;
 
     static DmdbServer* _self_instance;
-    pid_t _self_pid;
+    // pid_t _self_pid;
     //std::string _base_config_file;
-    DmdbConfigFileLoader* _base_config_file_loader;
-    std::string _self_executable_file;
-    std::vector<std::string> _self_exe_argv;
-    std::string _self_pid_file;
     
-    std::unordered_map<std::string, DmdbCommand*> _dmdb_commands;
+    // std::string _self_executable_file;
+    // std::vector<std::string> _self_exe_argv;
+    // std::string _self_pid_file;
     
-    size_t _self_memory_cost_init;
+    //std::unordered_map<std::string, DmdbCommand*> _dmdb_commands;
+    
     bool _plan_to_shutdown;
-    bool _is_loading_db_file;
-    time_t _server_start_time;
+
+    // time_t _server_start_time;
+
+    /*
     long long _processed_commands_num;
     long long _received_connections_num;
     long long _rejected_connections_num;
@@ -87,9 +93,12 @@ private:
     long long _partial_sync_failed_num;
     long long _net_input_size;
     long long _net_output_size;
+    */
     
     bool _is_preamble;
     bool _is_daemonize;
+    
+    /*
     bool _is_aof_enabled;
     std::string _aof_file;
     int _aof_fd;
@@ -98,12 +107,12 @@ private:
     time_t _aof_rewrite_start_time;
     time_t _last_aof_rewrite_time_cost;
     int _last_aof_bg_rewrite_status;
-    bool _is_aof_use_rdb_preamble_enabled;
-    pid_t _rdb_child_pid;
+ 
+ 
     time_t _last_rdb_save_ok_time;
     time_t _last_bgsave_start_time;
     bool _is_last_bgsave_ok;
-    
+    */
     // std::string _server_log_file;
     // bool _is_sys_log_enabled;
     bool _is_master_role;
@@ -111,6 +120,7 @@ private:
     unsigned long long _memory_max_available_size;
     bool _is_cluster_mode;
     // DmdbServerTerminateSignalHandler* _terminate_signal_handler;
+    DmdbConfigFileLoader* _base_config_file_loader;
     DmdbClusterManager* _cluster_manager;
     DmdbClientManager* _client_manager;
     DmdbDatabaseManager* _database_manager;

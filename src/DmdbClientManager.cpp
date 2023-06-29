@@ -5,6 +5,7 @@
 #include "DmdbEventProcessor.hpp"
 #include "DmdbEventManagerCommon.hpp"
 #include "DmdbServerFriends.hpp"
+#include "DmdbReplicationManager.hpp"
 
 namespace Dmdb {
 
@@ -70,6 +71,9 @@ DmdbClientManager::DmdbClientManager() {
     _port_for_client = 10000;
     _client_timeout_seconds = 1;
     _client_input_buf_max_size = 1024*1024*1024;
+    _is_clients_paused = false;
+    _clients_pause_end_time = 0;
+    _password = "123456";
 }
 
 
@@ -130,17 +134,22 @@ bool DmdbClientManager::InsertToCloseIfNotExists(DmdbClientContact* clientContac
 }
 
 void DmdbClientManager::DisconnectClient(int fd) {
+    DmdbClientManagerRequiredComponent requiredComponents;
+    GetDmdbClientManagerRequiredComponent(requiredComponents);
     std::unordered_map<int, DmdbClientContact*>::iterator it = _fd_client_map.find(fd);
     /* We don't have to delete it from _clients_to_close. */
     if(it != _fd_client_map.end()) {
-        DmdbClientManagerRequiredComponent requiredComponents;
-        GetDmdbClientManagerRequiredComponent(requiredComponents);
         requiredComponents._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE, 
                                                             "Close the connection with client: %s",
                                                             it->second->GetClientName());
         requiredComponents._event_manager->DelFd(it->first, true);
         close(it->first);
         DelIfExistsInToClose(it->first);
+        /* RemoveMasterOrReplica will check whether it is a replica of mine */
+        requiredComponents._repl_manager->RemoveMasterOrReplica(it->second);
+        /* Remove the clientContact from _clients_wait_n_replicas of master instance if it is waitting, 
+         * if it is not waitting, this function do nothing */
+        requiredComponents._repl_manager->StopWaitting(it->second);
         delete it->second;
         _fd_client_map.erase(it);       
     }
@@ -211,6 +220,14 @@ std::string DmdbClientManager::GetNameOfClient(int fd) {
     return "";    
 }
 
+DmdbClientContact* DmdbClientManager::GetClientContactByFd(int fd) {
+    std::unordered_map<int, DmdbClientContact*>::iterator it = _fd_client_map.find(fd);
+    if(it != _fd_client_map.end()) {
+        return it->second;
+    }
+    return nullptr;    
+}
+
 void DmdbClientManager::HandleClientAfterWritting(int fd, size_t writedLen) {
     std::unordered_map<int, DmdbClientContact*>::iterator it = _fd_client_map.find(fd);
     if(it != _fd_client_map.end()) {
@@ -220,10 +237,13 @@ void DmdbClientManager::HandleClientAfterWritting(int fd, size_t writedLen) {
 
 size_t DmdbClientManager::ProcessClientsRequest() {
     size_t processedNum = 0;
+    DmdbClientManagerRequiredComponent requiredComponents;
+    GetDmdbClientManagerRequiredComponent(requiredComponents);
     for(std::unordered_map<int, DmdbClientContact*>::iterator it = _fd_client_map.begin();
         it != _fd_client_map.end();
         it++) {
-        if(!_is_clients_paused) {
+        /* we shouldn't pause replication from master */
+        if(!_is_clients_paused || requiredComponents._repl_manager->IsMyMaster(it->second->GetClientName())) {
             if(it->second->GetStatus() & static_cast<uint32_t>(ClientStatus::CLOSE_AFTER_REPLY)) {
                 InsertToCloseIfNotExists(it->second);
             } else {
@@ -252,7 +272,7 @@ bool DmdbClientManager::AreClientsPaused() {
     return _is_clients_paused;
 }
 
-size_t DmdbClientManager::closeInvalidClients() {
+size_t DmdbClientManager::CloseInvalidClients() {
     size_t closedNum = 0;
     std::list<DmdbClientContact*>::iterator it = _clients_to_close.begin();
     std::list<DmdbClientContact*>::iterator toDel = it;
@@ -267,6 +287,11 @@ size_t DmdbClientManager::closeInvalidClients() {
         closedNum++;
     }
     return closedNum;
+}
+
+void DmdbClientManager::ProcessClients() {
+    ProcessClientsRequest();
+    CloseInvalidClients();
 }
 
 void DmdbClientManager::SetPassword(const std::string &password) {
