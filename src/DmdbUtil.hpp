@@ -23,9 +23,13 @@ public:
     static void LocalTime(struct tm *tmp, time_t t, time_t tz, int dst);
     static uint64_t GetCurrentMs();
     static uint64_t Crc64(uint64_t crc, const unsigned char *s, uint64_t l);
+    static int RecvLineFromSocket(int socketFd, char* buf, size_t bufLen);
+    static void ServerAssert(bool expression, const std::string &expStr);
 private:
     static bool IsValidIPV4Num(const std::string &strNum);
     static int IsLeapYear(time_t year);
+    static int RecvPeek(int socketFd, char* buf, size_t bufLen);
+    static size_t RecvCount(int socketFd, char* buf, size_t bufLen, size_t count);
 };
 
 

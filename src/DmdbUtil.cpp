@@ -1,6 +1,12 @@
+#include <sys/time.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "DmdbUtil.hpp"
-#include <sys/time.h>
+
 
 namespace Dmdb {
 
@@ -292,6 +298,52 @@ uint64_t DmdbUtil::Crc64(uint64_t crc, const unsigned char *s, uint64_t l) {
         crc = crc64_tab[(uint8_t)crc ^ byte] ^ (crc >> 8);
     }
     return crc;
+}
+
+void DmdbUtil::ServerAssert(bool expression, const std::string &expStr) {
+    if(!expression) {
+        std::cerr << "Failed to assert!" << std::endl;
+        std::cerr << expStr << " is false at " << __FILE__ << __LINE__ << std::endl;
+        exit(1);
+    }
+}
+
+int DmdbUtil::RecvPeek(int socketFd, char* buf, size_t bufLen) {
+    /* MSG_PEEK means we won't remove data from tcp buffer after receiving */
+    int ret = recv(socketFd, buf, bufLen, MSG_PEEK);
+    return ret;
+}
+
+size_t DmdbUtil::RecvCount(int socketFd, char* buf, size_t bufLen, size_t count) {
+    ServerAssert(count <= bufLen, "count <= buflen");
+    size_t readPos = 0;
+    while(readPos < count) {
+        int ret = read(socketFd, buf, count);
+        if(ret < 0) {
+            memset(buf, 0, bufLen);
+            return ret;
+        }
+        readPos += ret;
+    }
+    return count;
+}
+
+int DmdbUtil::RecvLineFromSocket(int socketFd, char* buf, size_t bufLen) {
+    int ret = RecvPeek(socketFd, buf, bufLen);
+    if(ret < 0) {
+        return ret;
+    }
+    size_t i;
+    for(i = 0; i < static_cast<size_t>(ret); ++i) {
+        if(buf[i] == '\n') {
+            break;
+        }
+    }
+    ServerAssert(i > 1 && buf[i-1] == '\r', "i > 1 && buf[i-1] == '\r'");
+    /* Calling this function is mainly for clearing 0~i byte from tcp buffer */
+    ret = RecvCount(socketFd, buf, bufLen, i+1);
+    memset(buf+i-1, 0, bufLen-(i+1));
+    return ret;
 }
 
 

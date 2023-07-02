@@ -11,10 +11,13 @@ namespace Dmdb {
 class DmdbCommand;
 class DmdbServerLogger;
 class DmdbClientManager;
+class DmdbReplicationManager;
 
 struct DmdbClientContactRequiredComponent {
     DmdbServerLogger* _server_logger;
     DmdbClientManager* _client_manager;
+    DmdbReplicationManager* _repl_manager;
+    bool _is_myself_master;
 };
 
 /* We use _client_staus & ClientStatus to get client's status */
@@ -39,11 +42,15 @@ public:
     bool ProcessOneMultiProtocolRequest(size_t &startPos);
     bool ProcessClientRequest();
     void SetChecked();
+    bool IsChecked();
     void SetMultiState(bool state);
     void SetStatus(uint32_t status);
     uint32_t GetStatus();
     bool IsMultiState();
     DmdbCommand* PopCommandOfExec();
+    std::string GetIp();
+    int GetPort();
+    size_t GetMultiQueueSize();
 #ifdef MAKE_TEST
     void TestReplyToClient();
 #endif
@@ -62,8 +69,8 @@ private:
      * after ~DmdbClientContact() executed */
     DmdbCommand*  _current_command = nullptr;
     std::queue<DmdbCommand*> _exec_command_queue;
-    bool _is_chekced = false;
-    bool _is_multi_state = false;
+    bool _is_chekced;
+    bool _is_multi_state;
 };
 
 }

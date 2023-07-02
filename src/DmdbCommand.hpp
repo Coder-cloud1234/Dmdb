@@ -11,18 +11,24 @@ class DmdbDatabaseManager;
 class DmdbClientContact;
 class DmdbRDBManager;
 class DmdbClientManager;
+class DmdbReplicationManager;
 
 struct DmdbCommandRequiredComponent {
     DmdbDatabaseManager* _server_database_manager;
     DmdbRDBManager* _server_rdb_manager;
-    DmdbClientManager* _server_client_manager; 
+    DmdbClientManager* _server_client_manager;
+    DmdbReplicationManager* _repl_manager; 
+    bool _is_myself_master;
+    bool* _is_plan_to_shutdown;
 };
 
 class DmdbCommand {
 public:
     static DmdbCommand* GenerateCommandByName(const std::string &name);
+    static bool IsWCommand(const std::string &commandName);
     std::string GetName();
     void AppendCommandPara(const std::string &para);
+    void AddExecuteRetToClientIfNeed(const std::string &msg, DmdbClientContact &clientContact, bool isForce);
     virtual bool Execute(DmdbClientContact &clientContact) = 0;
     virtual ~DmdbCommand();
 protected:
@@ -157,6 +163,48 @@ public:
     virtual bool Execute(DmdbClientContact &clientContact);
     DmdbClientCommand(std::string name);
     ~DmdbClientCommand();
+};
+
+class DmdbSyncCommand : public DmdbCommand {
+public:
+    virtual bool Execute(DmdbClientContact &clientContact);
+    DmdbSyncCommand(std::string name);
+    ~DmdbSyncCommand();
+};
+
+class DmdbReplconfCommand : public DmdbCommand {
+public:
+    virtual bool Execute(DmdbClientContact &clientContact);
+    DmdbReplconfCommand(std::string name);
+    ~DmdbReplconfCommand();
+};
+
+class DmdbBgSaveCommand : public DmdbCommand {
+public:
+    virtual bool Execute(DmdbClientContact &clientContact);
+    DmdbBgSaveCommand(std::string name);
+    ~DmdbBgSaveCommand();
+};
+
+class DmdbShutdownCommand : public DmdbCommand {
+public:
+    virtual bool Execute(DmdbClientContact &clientContact);
+    DmdbShutdownCommand(std::string name);
+    ~DmdbShutdownCommand();
+};
+
+class DmdbRoleCommand : public DmdbCommand {
+public:
+    virtual bool Execute(DmdbClientContact &clientContact);
+    DmdbRoleCommand(std::string name);
+    ~DmdbRoleCommand();
+};
+
+class DmdbWaitCommand : public DmdbCommand {
+public:
+    virtual bool Execute(DmdbClientContact &clientContact);
+    DmdbWaitCommand(std::string name);
+    ~DmdbWaitCommand();
 };
 
 }

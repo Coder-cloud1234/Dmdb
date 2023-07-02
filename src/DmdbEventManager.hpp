@@ -27,15 +27,17 @@ public:
     bool AddEvent4Fd(int fd, EpollEvent event, EventProcessorType type);
     bool DelEvent4Fd(int fd, EpollEvent event);
     bool DelFd(int fd, bool isConnection);
-    bool ProcessFiredEvents(int timeout);
-    
+    void SetEpollWaitTimeout(int timeout);
+    void WaitAndProcessEvents();
 private:
     DmdbEventManager(uint16_t maxNum);
     bool InitEventManager();
+    bool ProcessFiredEvents(int timeout);
     static DmdbEventManager* _event_manager_instance;
     std::unordered_map<int, DmdbEventProcessor*> _fd_event_processor_map;
     epoll_event* _fired_events;
     int _epfd;
+    int _epoll_wait_timeout;
     uint16_t _max_fd_num;
     bool _is_inited;
 };

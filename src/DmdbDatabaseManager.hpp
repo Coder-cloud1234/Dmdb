@@ -31,6 +31,7 @@ public:
     std::string GetName() const;
     DmdbKey(std::string name);
     DmdbKey(std::string name, uint64_t ms);
+    ~DmdbKey();
     
     friend class HashFunction<DmdbKey>;
     friend class EqualFunction<DmdbKey>;
@@ -69,6 +70,7 @@ public:
     size_t GetDatabaseSize();
     bool GetNPairsFormatRawSequential(uint8_t* buf, size_t bufLen, size_t &copiedSize, size_t expectedAmount, size_t &actualAmount);
     size_t RemoveExpiredKeys();
+    uint64_t GetTotalBytesOfPairsWhenSave();
     void SetExpireIntervalForDB(uint64_t ms);
     void Destroy();
 #ifdef MAKE_TEST

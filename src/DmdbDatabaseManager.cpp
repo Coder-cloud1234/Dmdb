@@ -28,6 +28,10 @@ uint64_t DmdbKey::GetExpireTime() const {
     return _expire_ms;
 }
 
+DmdbKey::~DmdbKey() {
+
+}
+
 /* Here you must ensure that buf's size is bigger than value's */
 size_t DmdbValue::GetValueRawData(uint8_t* buf) {
     size_t getSize = GetValueSize();
@@ -171,7 +175,7 @@ bool DmdbDatabaseManager::SetKeyExpireTime(const std::string& keyStr, uint64_t m
     }
     if((ms!=0 && ms<=DmdbUtil::GetCurrentMs()) || (it->first.GetExpireTime() <= DmdbUtil::GetCurrentMs())) {
         DelKey(keyStr);
-        return false;
+        return true;
     }
     DmdbValue* value = it->second;
     _database.erase(it);
@@ -194,6 +198,28 @@ void DmdbDatabaseManager::GetKeysByPattern(const std::string &patternStr, std::v
 
 size_t DmdbDatabaseManager::GetDatabaseSize() {
     return _database.size();
+}
+
+/* This size we compute is for saving rdb database */
+uint64_t DmdbDatabaseManager::GetTotalBytesOfPairsWhenSave() {
+    uint64_t totalBytes = 0;
+    std::unordered_map<DmdbKey, DmdbValue*, HashFunction<DmdbKey>, EqualFunction<DmdbKey>>::iterator it = _database.begin();
+    while(it != _database.end()) {
+        /* Expire time size */
+        totalBytes += sizeof(uint64_t);
+        /* Key length size */
+        totalBytes += sizeof(uint32_t);
+        /* Key size */
+        totalBytes += it->first.GetName().size();
+        /* Value type size */
+        totalBytes += 1;
+        /* Value length size */
+        totalBytes += sizeof(uint32_t);
+        /* Value size */
+        totalBytes += it->second->GetValueSize();
+        it++;
+    }
+    return totalBytes;
 }
 
 void DmdbDatabaseManager::SetExpireIntervalForDB(uint64_t ms) {

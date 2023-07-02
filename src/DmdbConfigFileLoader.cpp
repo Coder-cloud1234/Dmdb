@@ -73,4 +73,8 @@ void DmdbConfigFileLoader::LoadConfigFile(std::unordered_map<std::string, std::v
     configFileStream.clear();
 }
 
+DmdbConfigFileLoader::~DmdbConfigFileLoader() {
+    
+}
+
 };
