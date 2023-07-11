@@ -101,6 +101,7 @@ std::string DmdbCommand::FormatHelpMsgFromArray(const std::vector<std::string> &
     for(size_t i = 0; i < vec.size(); ++i) {
         ret += ("+"+vec[i]+"\r\n");
     }
+    ret = "*" + std::to_string(vec.size()+1) + "\r\n" + ret;
     return ret;
 }
 
@@ -435,7 +436,7 @@ bool DmdbExpireCommand::Execute(DmdbClientContact &clientContact) {
     GetDmdbCommandRequiredComponents(components);
     std::string msgResult;
     if(_parameters.size() != 2) {
-        msgResult = "-ERR wrong number of arguments for MSET";
+        msgResult = "-ERR wrong number of arguments for Expire";
         AddExecuteRetToClientIfNeed(msgResult, clientContact);        
         return false;
     }
@@ -445,6 +446,8 @@ bool DmdbExpireCommand::Execute(DmdbClientContact &clientContact) {
         AddExecuteRetToClientIfNeed(msgResult, clientContact);
         return false;
     }
+    expireTime *= 1000;
+    expireTime += DmdbUtil::GetCurrentMs();
     bool isOk = components._server_database_manager->SetKeyExpireTime(_parameters[0], expireTime);
     if(isOk)
         msgResult = ":1\r\n";
@@ -675,7 +678,7 @@ bool DmdbPersistCommand::Execute(DmdbClientContact &clientContact) {
     bool isExist = components._server_database_manager->SetKeyExpireTime(_parameters[0], 0);
     msg = ":";
     if(!isExist) {
-        msg = "0";
+        msg += "0";
     } else {
         msg += "1";
     }

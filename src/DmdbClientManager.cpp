@@ -141,7 +141,7 @@ void DmdbClientManager::DisconnectClient(int fd) {
     if(it != _fd_client_map.end()) {
         requiredComponents._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE, 
                                                             "Close the connection with client: %s",
-                                                            it->second->GetClientName());
+                                                            it->second->GetClientName().c_str());
         requiredComponents._event_manager->DelFd(it->first, true);
         close(it->first);
         DelIfExistsInToClose(it->first);

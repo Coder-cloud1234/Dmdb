@@ -21,7 +21,7 @@ struct DmdbRepilcationManagerRequiredComponents {
 class DmdbReplicationManager {
 public:
     virtual void ReplicateDataToSlaves(const std::string &data) = 0;
-    virtual void SetReplayOkSize(size_t addLen) = 0;
+    virtual void AddReplayOkSize(size_t addLen) = 0;
     virtual long long GetReplayOkSize() = 0;
     virtual DmdbClientContact* GetMasterClientContact() = 0;
     virtual bool IsOneOfMySlaves(DmdbClientContact* client) = 0;
@@ -36,6 +36,7 @@ public:
     virtual void ReportToMasterMyReplayOkSize() = 0;
     virtual void SetReplicaReplayOkSize(DmdbClientContact* replica, long long size) = 0;
     virtual long long GetReplOffset() = 0;
+    virtual void SetReplOffset(long long offset) = 0;
     virtual std::string GetMultiBulkOfReplicasOrMaster() = 0;
     virtual void TimelyTask() = 0;
     virtual void SetMasterPassword(const std::string &pwd) = 0;

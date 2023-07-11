@@ -131,11 +131,12 @@ size_t DmdbRDBManager::GenerateRDBHeader(uint8_t* buf, size_t bufLen, DmdbRDBReq
     size_t genSize = 0;
     uint64_t currentMs = 0;
     uint8_t isPreamble = 0;
+    long long replOffset = 0;
     uint32_t dbSize = 0;
     uint64_t totalTransferBytes = 0;
     size_t planSize = DMDB_MARK.length() + sizeof(_rdb_version) + 
                       sizeof(components._server_version) + sizeof(currentMs) + 
-                      sizeof(isPreamble) + sizeof(dbSize);
+                      sizeof(isPreamble) + sizeof(replOffset) + sizeof(dbSize);
     if(isForReplica)
         planSize += sizeof(totalTransferBytes);
 
@@ -167,6 +168,10 @@ size_t DmdbRDBManager::GenerateRDBHeader(uint8_t* buf, size_t bufLen, DmdbRDBReq
     isPreamble = *(components._is_preamble);
     memcpy(buf+genSize, (uint8_t*)&isPreamble, sizeof(isPreamble));
     genSize += sizeof(isPreamble);
+
+    replOffset = components._repl_manager->GetReplOffset();
+    memcpy(buf+genSize, (uint8_t*)&replOffset, sizeof(replOffset));
+    genSize += sizeof(replOffset);
 
     dbSize = components._database_manager->GetDatabaseSize();
     memcpy(buf+genSize, (uint8_t*)&dbSize, sizeof(dbSize));
@@ -510,6 +515,7 @@ bool DmdbRDBManager::LoadDatabase(int fd) {
     char dmdbMark[5] = {0};
     uint8_t rdbVersion = 0;
     uint8_t serverVersion = 0;
+    long long replOffset = 0;
     uint32_t dbSize = 0;
     uint32_t getPairsCount = 0;
     uint64_t expectedCrcCode = 0;
@@ -524,7 +530,8 @@ bool DmdbRDBManager::LoadDatabase(int fd) {
     uint64_t shouldReadBytesFromMaster = 0;
     uint64_t readBytesFromMaster = 0;
     bool isReadOver = false;
-    uint8_t headerSize = DMDB_MARK.length() + sizeof(RDB_VERSION) + sizeof(components._server_version) + TIME_STAMP_LENGTH + PREAMBLE_LEN + sizeof(dbSize);
+    uint8_t headerSize = DMDB_MARK.length() + sizeof(RDB_VERSION) + sizeof(components._server_version) +
+                         TIME_STAMP_LENGTH + PREAMBLE_LEN + sizeof(replOffset) + sizeof(dbSize);
     uint8_t headerPos = 0;
 
     if(fd < 0) {
@@ -580,6 +587,8 @@ bool DmdbRDBManager::LoadDatabase(int fd) {
     headerPos += TIME_STAMP_LENGTH; /* We dismiss time stamp currently */
     *components._is_preamble = buf[headerPos]!=0 ? true:false;
     headerPos += PREAMBLE_LEN;
+    replOffset = *(long long*)(buf+headerPos);
+    headerPos += sizeof(replOffset);
     dbSize = *(uint32_t*)(buf+headerPos);
     headerPos += sizeof(dbSize);
     expectedCrcCode = DmdbUtil::Crc64(expectedCrcCode, (uint8_t*)(buf), headerSize);
@@ -677,7 +686,7 @@ bool DmdbRDBManager::LoadDatabase(int fd) {
     if(fd < 0) {
         components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
                                                     "RDB file:%s has been loaded successfully",
-                                                    _rdb_file);
+                                                    _rdb_file.c_str());
         rdbStream.close();
         _is_rdb_loading = false;        
     } else {
@@ -686,6 +695,8 @@ bool DmdbRDBManager::LoadDatabase(int fd) {
         components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
                                                     "RDB data has been received successfully");        
     }
+    /* This function makes sense for both mater and replica */
+    components._repl_manager->SetReplOffset(replOffset);
     return true;
 
 corrupted_error:
@@ -776,6 +787,7 @@ bool DmdbRDBManager::ReceiveRetCodeFromPipe(SaveRetCode &retCode, bool isBgSave)
  * Dmdb version: 1 byte
  * Time stamp: 8 bytes
  * AOF_PREAMBLE: 1 byte
+ * Replication offset: 8 bytes
  * DB_SIZE: 4 bytes
  * Key-values: unknown size, format raw data
  * EOF: 1 byte unsigned char
@@ -896,7 +908,7 @@ SaveRetCode DmdbRDBManager::SaveData(int fd, bool isBgSave) {
             return SaveRetCode::SEND_ERR;
         }
     }
-    delete pairsRawData;
+    delete[] pairsRawData;
     WriteDataToPipeIfNeed(std::to_string(static_cast<int>(SaveRetCode::SAVE_OK)), isBgSave);
     return SaveRetCode::SAVE_OK;
 }
