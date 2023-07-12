@@ -81,7 +81,7 @@ bool DmdbClientContact::ProcessOneMultiProtocolRequest(size_t &startPos) {
         AddReplyData2Client(errMsg);
         components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE, 
                                                     "Client %s sent a request with invalid protocol start character",
-                                                    _client_name);
+                                                    _client_name.c_str());
         _client_status |= static_cast<uint32_t>(ClientStatus::CLOSE_AFTER_REPLY);
         return false;
     }
@@ -94,7 +94,7 @@ bool DmdbClientContact::ProcessOneMultiProtocolRequest(size_t &startPos) {
             AddReplyData2Client(errMsg);
             components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE, 
                                                         "Client %s sent a request with too big mbulk count string",
-                                                        _client_name);
+                                                        _client_name.c_str());
             _client_status |= static_cast<uint32_t>(ClientStatus::CLOSE_AFTER_REPLY);
             return false;            
         }
@@ -106,7 +106,7 @@ bool DmdbClientContact::ProcessOneMultiProtocolRequest(size_t &startPos) {
         AddReplyData2Client(errMsg);
         components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
                                                     "Client %s sent a request with invalid multibulk length",
-                                                    _client_name);
+                                                    _client_name.c_str());
         _client_status |= static_cast<uint32_t>(ClientStatus::CLOSE_AFTER_REPLY);
         return false;
     }
@@ -119,7 +119,7 @@ bool DmdbClientContact::ProcessOneMultiProtocolRequest(size_t &startPos) {
             AddReplyData2Client(errMsg);
             components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
                                                         "Client %s sent a request with format error",
-                                                        _client_name);
+                                                        _client_name.c_str());
             _client_status |= static_cast<uint32_t>(ClientStatus::CLOSE_AFTER_REPLY);
             return false;            
         } 
@@ -130,7 +130,7 @@ bool DmdbClientContact::ProcessOneMultiProtocolRequest(size_t &startPos) {
                 AddReplyData2Client(errMsg);
                 components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE, 
                                                             "Client %s sent a request with too big bulk count string",
-                                                            _client_name);
+                                                            _client_name.c_str());
                 _client_status |= static_cast<uint32_t>(ClientStatus::CLOSE_AFTER_REPLY);
                 return false;            
             }
@@ -142,7 +142,7 @@ bool DmdbClientContact::ProcessOneMultiProtocolRequest(size_t &startPos) {
             AddReplyData2Client(errMsg);
             components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
                                                         "Client %s sent a request with invalid bulk length",
-                                                        _client_name);
+                                                        _client_name.c_str());
             _client_status |= static_cast<uint32_t>(ClientStatus::CLOSE_AFTER_REPLY);
             return false;
         }
@@ -153,7 +153,7 @@ bool DmdbClientContact::ProcessOneMultiProtocolRequest(size_t &startPos) {
             AddReplyData2Client(errMsg);
             components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
                                                         "Client %s sent a request whose parameter's length doesn't equal its bulk length",
-                                                        _client_name);
+                                                        _client_name.c_str());
             _client_status |= static_cast<uint32_t>(ClientStatus::CLOSE_AFTER_REPLY);
             return false;
         }        
@@ -176,7 +176,7 @@ bool DmdbClientContact::ProcessOneMultiProtocolRequest(size_t &startPos) {
         AddReplyData2Client(errMsg);
         components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
                                                     "Client %s sent a request whose parameter's number doesn't equal mbulk length",
-                                                    _client_name);
+                                                    _client_name.c_str());
         _client_status |= static_cast<uint32_t>(ClientStatus::CLOSE_AFTER_REPLY);
         return false;
     }
@@ -246,7 +246,7 @@ bool DmdbClientContact::ProcessClientRequest() {
                 AddReplyData2Client(errMsg);
                 components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
                                                             "Unauthenticated client %s sent a request",
-                                                            _client_name);
+                                                            _client_name.c_str());
                 
                 _client_status |= static_cast<uint32_t>(ClientStatus::CLOSE_AFTER_REPLY);
                 return false;
@@ -257,7 +257,7 @@ bool DmdbClientContact::ProcessClientRequest() {
                 if(!_is_chekced) {
                     components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
                                                                 "Client %s failed to authenticate",
-                                                                _client_name);
+                                                                _client_name.c_str());
                     
                     _client_status |= static_cast<uint32_t>(ClientStatus::CLOSE_AFTER_REPLY);
                     return false;
@@ -285,10 +285,13 @@ bool DmdbClientContact::ProcessClientRequest() {
              * block if I am a master. First, replicate multi, then replicate the remaining. */
             if(_is_multi_state && commandNameLower != "exec") {
                 _exec_command_queue.push(_current_command);
-                AddReplyData2Client("+QUEUED\r\n");
+                if(!components._repl_manager->IsMyMaster(_client_name))
+                    AddReplyData2Client("+QUEUED\r\n");
+                else if(isWCommand)
+                    components._repl_manager->AddReplayOkSize(_process_pos_of_input_buf - lastProcessedPos);
                 if(components._is_myself_master) {
                     components._repl_manager->ReplicateDataToSlaves(_client_input_buffer.substr(lastProcessedPos, _process_pos_of_input_buf - lastProcessedPos));
-                }
+                }              
                 lastProcessedPos = _process_pos_of_input_buf;
                 _current_command = nullptr;
                 continue;
@@ -298,8 +301,8 @@ bool DmdbClientContact::ProcessClientRequest() {
                 components._repl_manager->ReplicateDataToSlaves(_client_input_buffer.substr(lastProcessedPos, _process_pos_of_input_buf - lastProcessedPos));
             }
 
-            if(components._repl_manager->IsMyMaster(this->GetClientName())) {
-                components._repl_manager->SetReplayOkSize(_process_pos_of_input_buf - lastProcessedPos);
+            if(components._repl_manager->IsMyMaster(this->GetClientName()) && isWCommand) {
+                components._repl_manager->AddReplayOkSize(_process_pos_of_input_buf - lastProcessedPos);
             }
             lastProcessedPos = _process_pos_of_input_buf;
         }

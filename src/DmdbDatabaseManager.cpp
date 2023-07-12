@@ -162,6 +162,7 @@ bool DmdbDatabaseManager::SetKeyValuePair(const std::string& keyStr, const std::
     }
     if(it != _database.end()) {
         delete it->second;
+        _database.erase(it);
     }
     _database[key] = val;
     return true;
@@ -173,7 +174,7 @@ bool DmdbDatabaseManager::SetKeyExpireTime(const std::string& keyStr, uint64_t m
     if(it == _database.end()) {
         return false;
     }
-    if((ms!=0 && ms<=DmdbUtil::GetCurrentMs()) || (it->first.GetExpireTime() <= DmdbUtil::GetCurrentMs())) {
+    if((ms!=0 && ms<=DmdbUtil::GetCurrentMs()) || (it->first.GetExpireTime() != 0 && it->first.GetExpireTime() <= DmdbUtil::GetCurrentMs())) {
         DelKey(keyStr);
         return true;
     }

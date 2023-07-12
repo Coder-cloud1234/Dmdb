@@ -59,7 +59,7 @@ bool DmdbAcceptEventProcessor::ProcessOneReadable() {
 #endif
         requiredComponents._required_server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE, 
                                                             "Accepted connection from ip:%s, port:%d", 
-                                                            ip, 
+                                                            ip.c_str(), 
                                                             port);              
         return true;
     }
@@ -110,7 +110,7 @@ bool DmdbInteractEventProcessor::ProcessOneReadable() {
     } else if(ret == 0) {
         requiredComponents._required_server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
                                                                      "Client: %s closed the connection",
-                                                                     requiredComponents._required_client_manager->GetNameOfClient(event.data.fd));
+                                                                     requiredComponents._required_client_manager->GetNameOfClient(event.data.fd).c_str());
         requiredComponents._required_client_manager->DisconnectClient(event.data.fd);
         return false;
     } else {
@@ -184,7 +184,7 @@ bool DmdbEventProcessor::SetFdNonBlocking(int fd) {
         DmdbEventMangerRequiredComponent requiredComponents;
         GetDmdbEventMangerRequiredComponents(requiredComponents); 
         requiredComponents._required_server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::WARNING,
-                                                            "Failed to set fd: %d to O_NONBLOCK! Error info: ",
+                                                            "Failed to set fd: %d to O_NONBLOCK! Error info: %s",
                                                             fd, strerror(errno));
         return false;
     }
@@ -199,7 +199,7 @@ bool DmdbEventProcessor::SetFdNoDelay(int fd) {
         DmdbEventMangerRequiredComponent requiredComponents;
         GetDmdbEventMangerRequiredComponents(requiredComponents); 
         requiredComponents._required_server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::WARNING,
-                                                            "Failed to set fd: %d to TCP_NODELAY! Error info: ",
+                                                            "Failed to set fd: %d to TCP_NODELAY! Error info: %s",
                                                             fd, strerror(errno));        
         return false;
     }

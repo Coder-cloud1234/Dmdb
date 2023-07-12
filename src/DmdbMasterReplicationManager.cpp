@@ -45,7 +45,7 @@ void DmdbMasterReplicationManager::SetMyMasterClientContact(DmdbClientContact* m
 
 }
 
-void DmdbMasterReplicationManager::SetReplayOkSize(size_t addLen) {
+void DmdbMasterReplicationManager::AddReplayOkSize(size_t addLen) {
 
 }
 
@@ -98,8 +98,11 @@ bool DmdbMasterReplicationManager::FullSyncDataToReplica(DmdbClientContact* clie
 bool DmdbMasterReplicationManager::HandleFullSyncOver(int fd, bool isSuccess, bool isDisconnected) {
     DmdbRepilcationManagerRequiredComponents components;
     GetDmdbRepilcationManagerRequiredComponents(components);
+
+    /* We can only receive data from the replica during the period that full sync is finished but the replication offset hasn't
+     * be received. If we add OUT event now, it may mix the accumulative commands when syncing and the RDB data sent at last. 
+     * We can add OUT event for the replica only after we receive its replication offset. */
     if(isSuccess) {
-        components._event_manager->AddEvent4Fd(fd, EpollEvent::OUT, EventProcessorType::INTERACT);
         components._event_manager->AddEvent4Fd(fd, EpollEvent::IN, EventProcessorType::INTERACT);
         return true;
     }
@@ -152,6 +155,13 @@ void DmdbMasterReplicationManager::ReportToMasterMyReplayOkSize() {
 }
 
 void DmdbMasterReplicationManager::SetReplicaReplayOkSize(DmdbClientContact* replica, long long size) {
+    /* This means this replica finished full sync and reported replication offset just now. 
+     * Then we can write to commands to it. */
+    if(_replicas_supplementary.find(replica) == _replicas_supplementary.end()) {
+        DmdbRepilcationManagerRequiredComponents components;
+        GetDmdbRepilcationManagerRequiredComponents(components);        
+        components._event_manager->AddEvent4Fd(replica->GetClientSocket(), EpollEvent::OUT, EventProcessorType::INTERACT);
+    }
     _replicas_supplementary[replica]._replay_ok_size = size;
 }
 
@@ -159,10 +169,14 @@ long long DmdbMasterReplicationManager::GetReplOffset() {
     return _current_repl_offset;
 }
 
+void DmdbMasterReplicationManager::SetReplOffset(long long offset) {
+    _current_repl_offset = offset;
+}
+
 std::string DmdbMasterReplicationManager::GetMultiBulkOfReplicasOrMaster() {
     std::string multiBulk = "*" + std::to_string(_replicas.size()) + "\r\n";
     for(std::list<DmdbClientContact*>::iterator it = _replicas.begin(); it != _replicas.end(); ++it) {
-        bool hasSupp = _replicas_supplementary.find(*it) == _replicas_supplementary.end();
+        bool hasSupp = _replicas_supplementary.find(*it) != _replicas_supplementary.end();
         if(hasSupp)
             multiBulk += "*3\r\n";
         else

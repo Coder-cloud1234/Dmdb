@@ -254,7 +254,7 @@ void DmdbServer::InitWithConfigFile() {
         if(errno == ERANGE || timelyTaskInterval < 1000 || timelyTaskInterval > 60*1000) {
             DmdbUtil::ServerExitWithErrMsg("Invalid repl_timely_task_interval!");
         }
-        _repl_manager->SetFullSyncMaxMs(timelyTaskInterval);
+        _repl_manager->SetTaskInterval(timelyTaskInterval);
     }
     if(!_is_master_role) {
         if(parasMap.find("master_ip") == parasMap.end()) {

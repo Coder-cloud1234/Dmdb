@@ -28,7 +28,7 @@ public:
     virtual bool IsOneOfMySlaves(DmdbClientContact* client);
     virtual bool IsMyMaster(const std::string clientName);
     virtual void SetMyMasterClientContact(DmdbClientContact* master);
-    virtual void SetReplayOkSize(size_t addLen);
+    virtual void AddReplayOkSize(size_t addLen);
     virtual long long GetReplayOkSize();
     virtual bool RemoveMasterOrReplica(DmdbClientContact* client);
     virtual void AddReplicaByFd(int fd);
@@ -39,6 +39,7 @@ public:
     virtual void ReportToMasterMyReplayOkSize();
     virtual void SetReplicaReplayOkSize(DmdbClientContact* replica, long long size);
     virtual long long GetReplOffset();
+    virtual void SetReplOffset(long long offset);
     virtual std::string GetMultiBulkOfReplicasOrMaster();
     virtual void TimelyTask();
     virtual void SetMasterPassword(const std::string &pwd);

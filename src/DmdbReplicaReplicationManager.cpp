@@ -39,7 +39,7 @@ void DmdbReplicaReplicationManager::SetMyMasterClientContact(DmdbClientContact* 
     _current_master = master;
 }
 
-void DmdbReplicaReplicationManager::SetReplayOkSize(size_t addLen) {
+void DmdbReplicaReplicationManager::AddReplayOkSize(size_t addLen) {
     _repl_ok_size += addLen;
 }
 
@@ -197,8 +197,9 @@ bool DmdbReplicaReplicationManager::FullSyncFromMater() {
     ClearTimer();
 #endif
 
-    /* Only receiving all the rdb data successfully, we set _repl_ok_size */
+    /* Only receiving all the rdb data successfully, we set _repl_ok_size and report to master */
     _repl_ok_size = expectOffset;
+    ReportToMasterMyReplayOkSize();
     return isReplSucc;
 }
 
@@ -245,7 +246,11 @@ void DmdbReplicaReplicationManager::SetReplicaReplayOkSize(DmdbClientContact* re
 }
 
 long long DmdbReplicaReplicationManager::GetReplOffset() {
-    return 0;
+    return GetReplayOkSize();
+}
+
+void DmdbReplicaReplicationManager::SetReplOffset(long long offset) {
+    _repl_ok_size = offset;
 }
 
 std::string DmdbReplicaReplicationManager::GetMultiBulkOfReplicasOrMaster() {
