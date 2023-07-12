@@ -44,9 +44,6 @@ public:
     void DoService();
     void ShutdownServerBySignal(int sig);
     ~DmdbServer();
-#ifdef MAKE_TEST
-    void PrintServerConfig();
-#endif
     friend bool GetDmdbEventMangerRequiredComponents(DmdbEventMangerRequiredComponent &components);
     friend bool GetDmdbClientManagerRequiredComponent(DmdbClientManagerRequiredComponent &components);
     friend bool GetDmdbClientContactRequiredComponent(DmdbClientContactRequiredComponent &components);

@@ -73,9 +73,6 @@ public:
     uint64_t GetTotalBytesOfPairsWhenSave();
     void SetExpireIntervalForDB(uint64_t ms);
     void Destroy();
-#ifdef MAKE_TEST
-    void PrintDatabase();
-#endif
     DmdbDatabaseManager();
     ~DmdbDatabaseManager();
 private:

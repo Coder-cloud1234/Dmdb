@@ -51,9 +51,6 @@ public:
     std::string GetIp();
     int GetPort();
     size_t GetMultiQueueSize();
-#ifdef MAKE_TEST
-    void TestReplyToClient();
-#endif
 
 private:
     void ClearProcessedData();

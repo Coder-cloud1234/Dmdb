@@ -65,9 +65,6 @@ bool DmdbEventManager::AddEvent4Fd(int fd, EpollEvent event, EventProcessorType 
         if(_fd_event_processor_map.size() >= _max_fd_num)
             return false;
         ret = epoll_ctl(_epfd, EPOLL_CTL_ADD, fd, &epollEvent);
-#ifdef MAKE_TEST          
-        std::cout << "Add fd: " << epollEvent.data.fd  << std::endl;
-#endif
         if(ret == -1) {
             return false;
         }
@@ -105,9 +102,7 @@ bool DmdbEventManager::DelFd(int fd, bool isConnection) {
     tmpEe.data.fd = fd;
     epoll_ctl(_epfd,EPOLL_CTL_DEL,fd,&tmpEe);
     _fd_event_processor_map.erase(it);
-#ifdef MAKE_TEST          
-        std::cout << "Delete fd: " << fd  << std::endl;
-#endif
+
     if(isConnection) {
         DmdbEventMangerRequiredComponent requiredComponents;
         GetDmdbEventMangerRequiredComponents(requiredComponents);    
