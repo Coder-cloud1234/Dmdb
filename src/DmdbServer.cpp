@@ -361,28 +361,4 @@ DmdbServer::~DmdbServer() {
     delete _event_manager;
 }
 
-#ifdef MAKE_TEST
-void DmdbServer::PrintServerConfig() {
-    std::cout << "Server Config:" << std::endl;
-    std::cout << "  password: " << _client_manager->GetServerPassword() << std::endl;
-    std::cout << "  tcp_back_log: " << _tcp_back_log << std::endl;
-    std::cout << "  port_for_client: " << _client_manager->GetPortForClient() << std::endl;
-    std::cout << "  client_timeout_seconds: " << _client_manager->GetTimeoutForClient() << std::endl;
-    std::cout << "  client_input_buffer_max_size: " << _client_manager->GetInBufMaxSizeForClient() << std::endl;
-    /*
-    std::cout << "  is_daemonize: " << _is_daemonize << std::endl;
-    std::cout << "  is_aof_enabled: " << _is_aof_enabled << std::endl;
-    std::cout << "  aof_file: " << _aof_file << std::endl;
-    std::cout << "  is_aof_use_rdb_preamble_enabled: " << _is_aof_use_rdb_preamble_enabled << std::endl;
-    */
-    std::cout << "  rdb_file: " << _rdb_manager->GetRDBFile() << std::endl;
-    std::cout << "  is_master_role: " << _is_master_role << std::endl;
-    std::cout << "  max_connection_num: " << _max_connection_num << std::endl;
-    std::cout << "  memory_max_available_size: " << _memory_max_available_size << std::endl;
-    std::cout << "  is_cluster_mode: " << _is_cluster_mode << std::endl;
-}
-
-#endif
-
-
 }

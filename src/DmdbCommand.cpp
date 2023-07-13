@@ -264,19 +264,7 @@ bool DmdbSetCommand::Execute(DmdbClientContact &clientContact) {
     std::vector<std::string> valArray;
     valArray.emplace_back(_parameters[1]);
     std::string msg;
-/*
-#ifdef MAKE_TEST
-    std::cout << "***********************************************" << std::endl;
-    std::cout << "Parameters: ";
-    for(size_t i = 0; i < _parameters.size(); ++i) {
-        std::cout << _parameters[i] << " ";
-    }
-    std::cout << std::endl;
-    std::cout << "Before set executed:" << std::endl;
-    components._server_database_manager->PrintDatabase();
-    std::cout << "IsNX:" << isNx << " Value:" << value << std::endl;
-#endif
-*/
+
     if((isNx&&value!=nullptr) || (isXx&&value==nullptr) ) {
         msg = "$-1\r\n";
         AddExecuteRetToClientIfNeed(msg, clientContact);
@@ -285,13 +273,7 @@ bool DmdbSetCommand::Execute(DmdbClientContact &clientContact) {
 
     components._server_database_manager->SetKeyValuePair(_parameters[0], valArray,
                                                          DmdbValueType::STRING, expireTime);
-/*
-#ifdef MAKE_TEST
-    std::cout << "After set executed:" << std::endl;
-    components._server_database_manager->PrintDatabase();
-    std::cout << "***********************************************" << std::endl;
-#endif
-*/
+
     msg = "+OK\r\n";
     AddExecuteRetToClientIfNeed(msg, clientContact);
     return true;    
@@ -411,11 +393,11 @@ bool DmdbMSetCommand::Execute(DmdbClientContact &clientContact) {
         AddExecuteRetToClientIfNeed(msgResult, clientContact);
         return false;
     }
-
+    std::vector<std::string> valArr;
     for(size_t i = 0; i < _parameters.size(); i+=2) {
-        std::vector<std::string> valArr;
         valArr.emplace_back(_parameters[i+1]);
         components._server_database_manager->SetKeyValuePair(_parameters[i], valArr, DmdbValueType::STRING, 0);
+        valArr.clear();
     }
     msgResult = "+OK\r\n";
     AddExecuteRetToClientIfNeed(msgResult, clientContact);
@@ -436,7 +418,7 @@ bool DmdbExpireCommand::Execute(DmdbClientContact &clientContact) {
     GetDmdbCommandRequiredComponents(components);
     std::string msgResult;
     if(_parameters.size() != 2) {
-        msgResult = "-ERR wrong number of arguments for Expire";
+        msgResult = "-ERR wrong number of arguments for Expire\r\n";
         AddExecuteRetToClientIfNeed(msgResult, clientContact);        
         return false;
     }
@@ -636,7 +618,7 @@ bool DmdbPTTLCommand::Execute(DmdbClientContact &clientContact) {
     }
     std::string msg = "";
     if(_parameters.size() != 1) {
-        msg = "-ERR wrong number of arguments for Type";
+        msg = "-ERR wrong number of arguments for PTTL\r\n";
         AddExecuteRetToClientIfNeed(msg, clientContact);
         return false;        
     }
@@ -671,7 +653,7 @@ bool DmdbPersistCommand::Execute(DmdbClientContact &clientContact) {
     GetDmdbCommandRequiredComponents(components);
     std::string msg = "";
     if(_parameters.size() != 1) {
-        msg = "-ERR Wrong number of arguments for Type";
+        msg = "-ERR Wrong number of arguments for Type\r\n";
         AddExecuteRetToClientIfNeed(msg, clientContact);
         return false;        
     }

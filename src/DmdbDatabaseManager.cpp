@@ -304,16 +304,5 @@ size_t DmdbDatabaseManager::RemoveExpiredKeys() {
     return deletedNum;
 }
 
-#ifdef MAKE_TEST
-void DmdbDatabaseManager::PrintDatabase() {
-    std::cout << "***Database begin***" << std::endl;
-    std::unordered_map<DmdbKey, DmdbValue*, HashFunction<DmdbKey>, EqualFunction<DmdbKey>>::iterator it = _database.begin();
-    while(it != _database.end()) {
-        std::cout << "key:" << it->first.GetName() << ", expire time:" << it->first.GetExpireTime() << ", value:" << it->second->GetValueString() << std::endl;
-        it++;
-    }   
-    std::cout << "***Database end***" << std::endl;
-}
-#endif
 
 }

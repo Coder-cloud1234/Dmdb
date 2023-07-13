@@ -287,7 +287,7 @@ bool DmdbClientContact::ProcessClientRequest() {
                 _exec_command_queue.push(_current_command);
                 if(!components._repl_manager->IsMyMaster(_client_name))
                     AddReplyData2Client("+QUEUED\r\n");
-                else if(isWCommand)
+                else
                     components._repl_manager->AddReplayOkSize(_process_pos_of_input_buf - lastProcessedPos);
                 if(components._is_myself_master) {
                     components._repl_manager->ReplicateDataToSlaves(_client_input_buffer.substr(lastProcessedPos, _process_pos_of_input_buf - lastProcessedPos));
@@ -301,7 +301,7 @@ bool DmdbClientContact::ProcessClientRequest() {
                 components._repl_manager->ReplicateDataToSlaves(_client_input_buffer.substr(lastProcessedPos, _process_pos_of_input_buf - lastProcessedPos));
             }
 
-            if(components._repl_manager->IsMyMaster(this->GetClientName()) && isWCommand) {
+            if(components._repl_manager->IsMyMaster(this->GetClientName()) && (isWCommand || _current_command->GetName() == "multi" || _current_command->GetName() == "exec")) {
                 components._repl_manager->AddReplayOkSize(_process_pos_of_input_buf - lastProcessedPos);
             }
             lastProcessedPos = _process_pos_of_input_buf;
@@ -325,10 +325,5 @@ int DmdbClientContact::GetPort() {
     return _client_port;
 }
 
-#ifdef MAKE_TEST
-void DmdbClientContact::TestReplyToClient() {
-    AddReplyData2Client("Hello world\n\t");
-}
-#endif
 
 }

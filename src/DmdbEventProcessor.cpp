@@ -11,12 +11,6 @@ bool DmdbAcceptEventProcessor::ProcessOneReadable() {
     if(event.data.fd > 0) {
         struct sockaddr_in clientAddress;
         socklen_t clientAddressLength = sizeof(clientAddress);
-#ifdef MAKE_TEST
-        int flags = fcntl(event.data.fd, F_GETFL);
-        if(!(flags & O_NONBLOCK)) {
-            std::cout << "Listened fd isn't non-block" << std::endl;
-        } 
-#endif
         DmdbEventMangerRequiredComponent requiredComponents;
         GetDmdbEventMangerRequiredComponents(requiredComponents); 
         int fd = accept(event.data.fd, (struct sockaddr*)&clientAddress, &clientAddressLength);
@@ -45,18 +39,12 @@ bool DmdbAcceptEventProcessor::ProcessOneReadable() {
                                                                 requiredComponents._required_server_max_conn_num);
             std::string replyMsg = "-ERR max number of clients reached\r\n";
             bool isWriteRight = ReplyRightNow(fd, replyMsg);
-#ifdef MAKE_TEST
-            if(isWriteRight == false) {
-                std::cout << "Write err info to client wrongly" << std::endl;
-            }
-#endif
+
             if(event.data.fd == requiredComponents._required_client_manager->GetListenedIPV4Fd())
                 requiredComponents._required_client_manager->DisconnectClient(fd);
             return false;
         }
-#ifdef MAKE_TEST
-        std::cout << "Accepted ip: " << ip << ", port: " << port << std::endl;
-#endif
+
         requiredComponents._required_server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE, 
                                                             "Accepted connection from ip:%s, port:%d", 
                                                             ip.c_str(), 

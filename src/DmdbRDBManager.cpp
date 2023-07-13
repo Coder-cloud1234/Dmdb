@@ -33,63 +33,6 @@ const uint32_t BUF_SIZE = 1024*1024;
 
 DmdbRDBManager* DmdbRDBManager::_instance = nullptr;
 
-
-#ifdef MAKE_TEST
-int bufFileFd = 0;
-size_t processedSizeOfDB = 0;
-std::fstream debugLog("debug.log");
-void PrintData(uint8_t* buf, size_t bufLen) {
-    for(size_t i = 0; i < bufLen; ++i) {
-        std::cout << std::hex << static_cast<uint16_t>(buf[i]);
-    }
-    std::cout << std::endl;
-}
-
-void PrintPair(const std::string &keyName, uint64_t expireTime, uint8_t valueType, const std::string &valueStr) {
-    if(!debugLog.is_open()) {
-        std::cout << "Failed to open debug.log" << std::endl;
-        exit(1);
-    }
-    std::string line = "Key name:" + keyName + "\n";
-    debugLog.write(line.c_str(), line.length());
-    line = std::string("    Key len:"+ std::to_string(keyName.length()) + "\n");
-    debugLog.write(line.c_str(), line.length());
-    line = "    Expire time:" + std::to_string(expireTime) + "\n";
-    debugLog.write(line.c_str(), line.length());
-    line = "    Value type:" + std::to_string(valueType) + "\n";
-    debugLog.write(line.c_str(), line.length());
-    line = "    Value len:" + std::to_string(valueStr.length()) + "\n";
-    debugLog.write(line.c_str(), line.length());
-    line = "    Value:" + valueStr + "\n";
-    debugLog.write(line.c_str(), line.length());
-}
-
-void CloseDebugLog() {
-    debugLog.close();
-}
-
-void OpenBufFile() {
-    bufFileFd = open("./received.txt", O_WRONLY, O_CREAT);
-    if(bufFileFd < 0) {
-        std::cout << "Failed to open ./received.txt" << std::endl;
-        exit(1);
-    }
-}
-
-void WriteBufToFile(char* buf, int bufLen) {
-    int ret = write(bufFileFd, buf, bufLen);
-    if(ret != bufLen) {
-        std::cout << "Error occurs when writting to ./received.txt" << std::endl;
-    }
-}
-
-void CloseBufFile() {
-    close(bufFileFd);
-}
-
-#endif
-
-
 bool DmdbRDBManager::IsRDBChildAlive() {
     return _rdb_child_pid > 0;
 }
@@ -282,21 +225,6 @@ LoadRetCode DmdbRDBManager::GetOnePair(char* buf, size_t bufLen,
 
     if(field == FieldOfSavedPair::KEY_NAME) {
         if(keyLen > BUF_SIZE) {
-#ifdef MAKE_TEST
-{
-    printf("Invalid length:%llx\n", keyLen);
-    printf("Failed pattern:");
-    for(int i = pos - 10; i < pos+10; i++) {
-        printf("%c", buf[i]);
-    }
-    printf("\n");
-    printf("Failed pattern byte format:");
-    for(int i = pos - 10; i < pos+10; i++) {
-        printf("%x", buf[i]);
-    }
-    printf("\n");
-}
-#endif
             return LoadRetCode::INVALID_LENGTH;
         } else if(pos+keyLen > bufLen) {
             goto NOT_ENOUGH;
@@ -326,21 +254,6 @@ LoadRetCode DmdbRDBManager::GetOnePair(char* buf, size_t bufLen,
 
     if(field == FieldOfSavedPair::VAL) {
         if(valLen > BUF_SIZE) {
-#ifdef MAKE_TEST
-{
-    printf("Invalid length:%llx\n", valLen);
-    printf("Failed pattern:");
-    for(int i = pos - 10; i < pos+10; i++) {
-        printf("%c", buf[i]);
-    }
-    printf("\n");
-    printf("Failed pattern byte format:");
-    for(int i = pos - 10; i < pos+10; i++) {
-        printf("%x", buf[i]);
-    }
-    printf("\n");
-}
-#endif
             return LoadRetCode::INVALID_LENGTH;
         } else if(pos+valLen>bufLen) {
             goto NOT_ENOUGH;
@@ -360,11 +273,6 @@ LoadRetCode DmdbRDBManager::GetOnePair(char* buf, size_t bufLen,
         pos += valLen;
         field = FieldOfSavedPair::EXPIRE_TIME;        
     }
-
-#ifdef MAKE_TEST
-    PrintPair(keyName, expireTime, valType, valueStr);
-    processedSizeOfDB += (pos - originalPos);
-#endif
 
     return LoadRetCode::OK;
 
@@ -593,11 +501,6 @@ bool DmdbRDBManager::LoadDatabase(int fd) {
     headerPos += sizeof(dbSize);
     expectedCrcCode = DmdbUtil::Crc64(expectedCrcCode, (uint8_t*)(buf), headerSize);
 
-#ifdef MAKE_TEST
-    OpenBufFile();
-    WriteBufToFile(buf+8, headerSize-8);
-#endif
-
     memset(buf, 0, headerSize);
 
     isReadOver = fd<0 ? rdbStream.eof() : readBytesFromMaster>=shouldReadBytesFromMaster;
@@ -621,10 +524,6 @@ bool DmdbRDBManager::LoadDatabase(int fd) {
                 readCountThisRound += readRet;
                 readBytesFromMaster += readRet;               
             }
-
-#ifdef MAKE_TEST
-    WriteBufToFile(buf+remainingCountAfterOneProcess, readRet);
-#endif
 
         }
         
@@ -650,9 +549,7 @@ bool DmdbRDBManager::LoadDatabase(int fd) {
             break;
         }
         isReadOver = fd<0 ? rdbStream.eof() : readBytesFromMaster>=shouldReadBytesFromMaster;
-#ifdef MAKE_TEST
-        std::cout << shouldReadBytesFromMaster << ", " << readBytesFromMaster << std::endl;
-#endif 
+
     }
 
     if(everyLoadResult != LoadRetCode::END) {
@@ -700,20 +597,6 @@ bool DmdbRDBManager::LoadDatabase(int fd) {
     return true;
 
 corrupted_error:
-#ifdef MAKE_TEST
-{
-    std::string lastLines = "Buf pos:" + std::to_string(processedPos) + "\n";
-    debugLog.write(lastLines.c_str(), lastLines.length());
-    lastLines = "Buf content:\n";
-    debugLog.write(lastLines.c_str(), lastLines.length());
-    debugLog.write(buf, 1000);
-    debugLog.write("\n", 1);
-    lastLines = "Total load size:" + std::to_string(processedSizeOfDB) + "\n";
-    debugLog.write(lastLines.c_str(), lastLines.length());
-    CloseDebugLog();
-}
-#endif
-
     if(fd < 0) {
         components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::WARNING,
                                                     "RDB file:%s has been corrupted",
@@ -820,12 +703,14 @@ SaveRetCode DmdbRDBManager::SaveData(int fd, bool isBgSave) {
     if(fd > 0) {
         if(write(fd, (char*)pairsRawData, headerSize) < 0) {
             WriteDataToPipeIfNeed(std::to_string(static_cast<int>(SaveRetCode::SEND_ERR)), isBgSave);
+            delete[] pairsRawData;
             return SaveRetCode::SEND_ERR;
         }
     } else {
         rdbStream.write((char*)pairsRawData, headerSize);
         if(rdbStream.bad()) {
             WriteDataToPipeIfNeed(std::to_string(static_cast<int>(SaveRetCode::WRITE_ERR)), isBgSave);
+            delete[] pairsRawData;
             return SaveRetCode::WRITE_ERR;
         }
             
@@ -845,25 +730,21 @@ SaveRetCode DmdbRDBManager::SaveData(int fd, bool isBgSave) {
                 rdbStream.write((char*)pairsRawData+writeCountOfThisRound, copiedSize-writeCountOfThisRound);
                 if(rdbStream.bad()) {
                     WriteDataToPipeIfNeed(std::to_string(static_cast<int>(SaveRetCode::WRITE_ERR)), isBgSave);
+                    delete[] pairsRawData;
                     return SaveRetCode::WRITE_ERR;
                 }
                 writeCountOfThisRound += rdbStream.tellp() - before;
-#ifdef MAKE_TEST
-                std::cout << "Copied:" << copiedSize << ", Count of this round" << writeCountOfThisRound << std::endl;
-#endif
             }              
         } else {
             while(writeCountOfThisRound < copiedSize) {
                 int ret = write(fd, (char*)pairsRawData+writeCountOfThisRound, copiedSize-writeCountOfThisRound);
                 if(ret < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
                     WriteDataToPipeIfNeed(std::to_string(static_cast<int>(SaveRetCode::SEND_ERR)), isBgSave);
+                    delete[] pairsRawData;
                     return SaveRetCode::SEND_ERR;
                 }
                 if(ret > 0)
                     writeCountOfThisRound += ret;
-#ifdef MAKE_TEST
-                std::cout << "Copied:" << copiedSize << ", Count of this round" << writeCountOfThisRound << std::endl;
-#endif
             }
         }
         crcCode = DmdbUtil::Crc64(crcCode, pairsRawData, copiedSize);
@@ -878,12 +759,14 @@ SaveRetCode DmdbRDBManager::SaveData(int fd, bool isBgSave) {
         rdbStream.write((char*)&eof, sizeof(eof));
         if (rdbStream.bad()) {
             WriteDataToPipeIfNeed(std::to_string(static_cast<int>(SaveRetCode::WRITE_ERR)), isBgSave);
+            delete[] pairsRawData;
             return SaveRetCode::WRITE_ERR;
         }
                     
     } else {
         if(write(fd, (char*)&eof, sizeof(eof)) < 0) {
             WriteDataToPipeIfNeed(std::to_string(static_cast<int>(SaveRetCode::SEND_ERR)), isBgSave);
+            delete[] pairsRawData;
             return SaveRetCode::SEND_ERR;
         }
     }
@@ -895,6 +778,7 @@ SaveRetCode DmdbRDBManager::SaveData(int fd, bool isBgSave) {
         rdbStream.write((char*)&crcCode, sizeof(crcCode));
         if (rdbStream.bad()) {
             WriteDataToPipeIfNeed(std::to_string(static_cast<int>(SaveRetCode::WRITE_ERR)), isBgSave);
+            delete[] pairsRawData;
             return SaveRetCode::WRITE_ERR;
         }    
         rdbStream.flush();
@@ -905,6 +789,7 @@ SaveRetCode DmdbRDBManager::SaveData(int fd, bool isBgSave) {
         /* If it is replica's fd, we can't close it */
         if(write(fd, (char*)&crcCode, sizeof(crcCode)) < 0) {
             WriteDataToPipeIfNeed(std::to_string(static_cast<int>(SaveRetCode::SEND_ERR)), isBgSave);
+            delete[] pairsRawData;
             return SaveRetCode::SEND_ERR;
         }
     }
