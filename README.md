@@ -28,10 +28,9 @@ connect to this database server. Now we have implemented the follow commands for
 Most of the commands above can be executed like being executed in redis server. Part of them
 are a little different from redis, you can read the source code for the details. We had done
 a performance test of this program and redis 5 by redis-benchmark in Ali cloud(clients=50,requests=100000), the result is as below:  
- | PING_BULK | SET | GET | MSET
----- / ----- / ------ / ------- / --------
-Dmdb | 6317.926 | 6062.614 | 6263.438 | 6163.382
-Redis | 6201.546 | 6100.722 | 6230.836 | 6298.842
+      | PING_BULK | SET      | GET      | MSET
+Dmdb  | 6317.926  | 6062.614 | 6263.438 | 6163.382
+Redis | 6201.546  | 6100.722 | 6230.836 | 6298.842  
 According to result, we can see Dmdb has similar performance as redis 5.
 
 ## 2. Usage
