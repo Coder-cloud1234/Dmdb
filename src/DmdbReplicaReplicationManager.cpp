@@ -50,8 +50,6 @@ long long DmdbReplicaReplicationManager::GetReplayOkSize() {
 bool DmdbReplicaReplicationManager::RemoveMasterOrReplica(DmdbClientContact* client) {
     if(client == _current_master) {
         _current_master = nullptr;
-        // _repl_sync_socket_fd = -1;
-        /* TODO: Broadcast to all the clients that master doesn't exist if necessary */
         return true;
     }
     return false;
@@ -86,7 +84,6 @@ std::string DmdbReplicaReplicationManager::SendCommandToMasterAndCheck(const std
         return actualReceiveStr;
     /* Using this function we can ensure that we will only receive one row of data even though there is much more data in tcp buffer */
     ret = DmdbUtil::RecvLineFromSocket(socket, recvBuf, sizeof(recvBuf));
-    // ret = recv(socket, recvBuf, sizeof(recvBuf), 0);
     if(ret < 0) {
         components._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::WARNING, 
                                                     ("Failed to receive data from master, error info:" + std::string(strerror(errno))).c_str());
@@ -116,13 +113,10 @@ void DmdbReplicaReplicationManager::HandleSignal(int sig) {
 }
 
 void DmdbReplicaReplicationManager::SetupTimer() {
-    // DmdbTimerHandlerForBlockingIO<DmdbReplicaReplicationManager>::SetInstance(this);
-    DmdbTimerHandlerForBlockingIO::SetInstance(this);
-    // sighandler_t src_sig;  
+    DmdbTimerHandlerForBlockingIO::SetInstance(this);  
     struct sigaction sa_alarm;
     sigemptyset(&sa_alarm.sa_mask);
     sa_alarm.sa_flags = SA_RESETHAND;
-    // void (*fun)(int) = DmdbTimerHandlerForBlockingIO<DmdbReplicaReplicationManager>::HandleSignal;
     void (*fun)(int) = DmdbTimerHandlerForBlockingIO::HandleSignal;
     sa_alarm.sa_handler = fun;
     sigaction(SIGALRM, &sa_alarm, nullptr);
@@ -131,7 +125,6 @@ void DmdbReplicaReplicationManager::SetupTimer() {
 
 void DmdbReplicaReplicationManager::ClearTimer() {
     alarm(0);
-    // DmdbTimerHandlerForBlockingIO<DmdbReplicaReplicationManager>::SetInstance(nullptr);
     DmdbTimerHandlerForBlockingIO::SetInstance(nullptr);
     sigset_t clearSet;
     sigaddset(&clearSet, SIGALRM);

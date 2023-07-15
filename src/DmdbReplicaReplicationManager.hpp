@@ -45,7 +45,6 @@ private:
     void SetupTimer();
     void ClearTimer();
     std::string _master_password;
-    // std::string _master_hostname;
     std::string _master_ip;
     int _master_port_for_client;
 

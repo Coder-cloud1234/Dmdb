@@ -15,8 +15,7 @@ enum class EpollEvent {
 };
 
 /* All these members matches a member of DmdbServer, they may be necessary for 
- * DmdbEventManger's operations, the pointer members can
- * affect DmdbServer's members */
+ * DmdbEventManger's operations, the pointer members can affect DmdbServer's members */
 struct DmdbEventMangerRequiredComponent {
     DmdbServerLogger* _required_server_logger;
     DmdbClientManager* _required_client_manager;

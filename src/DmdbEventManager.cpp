@@ -123,12 +123,7 @@ bool DmdbEventManager::DelEvent4Fd(int fd, EpollEvent event) {
         it->second->GetEvent().events &= ~(EPOLLOUT);
     }
     epoll_ctl(_epfd,EPOLL_CTL_MOD,fd, &it->second->GetEvent());
-    /*
-    if(!(it->second->GetEvent().events&EPOLLIN) && 
-       !(it->second->GetEvent().events&EPOLLOUT)) {
-        _fd_event_processor_map.erase(it);
-    }
-    */
+
     return true;
 }
 

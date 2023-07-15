@@ -34,7 +34,6 @@ protected:
     bool SetFdNoDelay(int fd);
     bool ReplyRightNow(int fd, const std::string &replyMsg);
 private:
-    //int _fd;
     struct epoll_event _event;
 };
 
@@ -43,7 +42,6 @@ public:
     DmdbAcceptEventProcessor(int fd, EpollEvent event);
     virtual void ProcessReadable();
     virtual void ProcessWritable();
-    // virtual bool ProcessWritable();
     virtual ~DmdbAcceptEventProcessor();
 private:
     bool ProcessOneReadable();
@@ -54,7 +52,6 @@ public:
     DmdbInteractEventProcessor(int fd, EpollEvent event);
     virtual void ProcessReadable();
     virtual void ProcessWritable();
-    // virtual bool ProcessWritable();
     virtual ~DmdbInteractEventProcessor();
 private:
     bool ProcessOneReadable();

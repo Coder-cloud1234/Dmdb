@@ -59,7 +59,6 @@ private:
     bool DelIfExistsInToClose(int fd);
     bool InsertToCloseIfNotExists(DmdbClientContact* clientContact);
     static DmdbClientManager* _client_manager_instance;
-    //std::unordered_map<std::string, DmdbClientContact*> _client_contacts;
     std::unordered_map<int, DmdbClientContact*> _fd_client_map;
     size_t _client_input_buf_max_size;
     int _port_for_client;

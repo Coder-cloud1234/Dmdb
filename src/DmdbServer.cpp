@@ -45,7 +45,6 @@ void DmdbServer::ShutDownServerIfNeed() {
         _server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE,
                                          "Bye bye!");
         // TODO: delete _cluster_manager;
-        // delete _terminate_signal_handler;
         delete _base_config_file_loader;
         delete _client_manager;
         delete _database_manager;
@@ -74,12 +73,6 @@ void DmdbServer::ShutdownServerBySignal(int sig) {
             logContent = "Received signal SIGTERM!";
             break;
         }
-        /*
-        default: {
-            logContent = "Received signal, plan to shutdown";
-            break;
-        }
-        */
     }
 
     if((_plan_to_shutdown && sig == SIGINT)) {
@@ -145,42 +138,15 @@ void DmdbServer::InitWithConfigFile() {
         if(!isValid)
             DmdbUtil::ServerExitWithErrMsg("Invalid is_daemonize!");
     }
-    /*
-    if(parasMap.find("is_aof_enabled") == parasMap.end()) {
-        _is_aof_enabled = true;
-    } else {
-        std::string strIsAofEnabled = parasMap["is_aof_enabled"][0];
-        bool isValid = DmdbUtil::GetBoolFromString(strIsAofEnabled, _is_aof_enabled);
-        if(!isValid)
-            DmdbUtil::ServerExitWithErrMsg("Invalid is_aof_enabled!");
-    }
-    if(_is_aof_enabled) {
-        if(parasMap.find("aof_file") == parasMap.end()) {
-            _aof_file = "Dmdb_AOF_File.aof";
-        } else {
-            _aof_file = parasMap["aof_file"][0];
-        }
 
-        if(parasMap.find("is_preamble") == parasMap.end()) {
-            _is_preamble = true;
-        } else {
-            std::string strIsAofUseRdbPreambleEnabled = parasMap["is_preamble"][0];
-            bool isValid = DmdbUtil::GetBoolFromString(strIsAofUseRdbPreambleEnabled, _is_preamble);
-            if(!isValid)
-                DmdbUtil::ServerExitWithErrMsg("Invalid is_preamble!");
-        }            
-    }
-    */ 
     if(parasMap.find("rdb_file") == parasMap.end()) {
         _rdb_manager =  DmdbRDBManager::GetUniqueRDBManagerInstance("Dmdb_RDB_File.rdb");
     } else {
         _rdb_manager = DmdbRDBManager::GetUniqueRDBManagerInstance(parasMap["rdb_file"][0]);
     }
     if(parasMap.find("server_log_file") == parasMap.end()) {
-        // _server_log_file = "Server_Log_File.log";
         _server_logger = DmdbServerLogger::GetUniqueServerLogger("Server_Log_File.log", DmdbServerLogger::Verbosity::VERBOSE);
     } else {
-        // _server_log_file = parasMap["server_log_file"][0];
         if(parasMap.find("server_log_verbose") == parasMap.end()) {
             _server_logger = DmdbServerLogger::GetUniqueServerLogger(parasMap["server_log_file"][0], DmdbServerLogger::Verbosity::VERBOSE);
         } else {

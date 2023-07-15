@@ -22,8 +22,7 @@ DmdbClientContact::DmdbClientContact(int fd, const std::string &ip, int port) {
 }
 
 DmdbClientContact::~DmdbClientContact() {
-    // close(_client_socket);
-    // delete _current_command;
+
 }
 
 std::string DmdbClientContact::GetClientName() {
@@ -180,11 +179,7 @@ bool DmdbClientContact::ProcessOneMultiProtocolRequest(size_t &startPos) {
         _client_status |= static_cast<uint32_t>(ClientStatus::CLOSE_AFTER_REPLY);
         return false;
     }
-    /*
-    if(startPos == _client_input_buffer.size()) {
-        startPos = 0;
-    }
-    */
+
     return true;
 }
 
@@ -266,12 +261,6 @@ bool DmdbClientContact::ProcessClientRequest() {
             }
             lastProcessedPos = _process_pos_of_input_buf;
         } else {
-            /*
-            if(commandNameLower == "multi") {
-                _is_multi_state = true;
-                continue;
-            }
-            */ 
             bool isWCommand = DmdbCommand::IsWCommand(_current_command->GetName());
             
             if(!components._is_myself_master && isWCommand && components._repl_manager->GetMasterClientContact() != this) {
