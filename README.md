@@ -27,18 +27,22 @@ connect to this database server. Now we have implemented the follow commands for
 21.WAIT  
 Most of the commands above can be executed like being executed in redis server. Part of them
 are a little different from redis, you can read the source code for the details. We had done
-a performance test of this program and redis 5 by redis-benchmark in Ali cloud(clients=50,requests=100000), the result is as below:  
+a performance test of this program and redis 5 by redis-benchmark in Ali cloud(clients=50,requests=100000), the result is as below: 
+
       | PING_BULK | SET      | GET      | MSET
+------|-----------|----------|----------|---------
 Dmdb  | 6317.926  | 6062.614 | 6263.438 | 6163.382
-Redis | 6201.546  | 6100.722 | 6230.836 | 6298.842  
+Redis | 6201.546  | 6100.722 | 6230.836 | 6298.842
+
 According to result, we can see Dmdb has similar performance as redis 5.
 
 ## 2. Usage
 Step1: Download this project  
 Step2: Enter this project directory and execute "cmake" command  
 Step3: Execute "make" command  
-Step4: Start the server with "./DmdbServer xxx.conf" command  
-Notice: Now Dmdb only supports linux platform.  
+Step4: Start the server with "./DmdbServer xxx.config" command  
+Notice: Now Dmdb only supports linux platform. master.config and replica.config are an example
+of config file for master and replica. 
 
 ## 3. Summary and outlook
 Now Dmdb has supported master-slave, cluster mode and other new features are still under development.  
