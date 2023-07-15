@@ -32,9 +32,10 @@ a performance test of this program and redis 5 by redis-benchmark in Ali cloud(c
       | PING_BULK | SET      | GET      | MSET
 ------|-----------|----------|----------|---------
 Dmdb  | 6317.926  | 6062.614 | 6263.438 | 6163.382
+------|-----------|----------|----------|---------
 Redis | 6201.546  | 6100.722 | 6230.836 | 6298.842
 
-According to result, we can see Dmdb has similar performance as redis 5.
+According to the result, we can see Dmdb has similar performance as redis 5.
 
 ## 2. Usage
 Step1: Download this project  
