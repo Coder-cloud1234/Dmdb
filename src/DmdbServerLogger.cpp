@@ -54,7 +54,6 @@ void DmdbServerLogger::WriteToServerLog(Verbosity logLevel, const char *fmt, ...
     struct tm tmToGetDST;
     time_t ut = static_cast<long long>(tv.tv_sec);
     localtime_r(&ut,&tmToGetDST);
-    //struct tm tm;
     DmdbUtil::LocalTime(&tmToGetDST,tv.tv_sec, timezone, tmToGetDST.tm_isdst);
     off = strftime(buf,sizeof(buf),"%d %b %Y %H:%M:%S.",&tmToGetDST);
     snprintf(buf+off,sizeof(buf)-off,"%03d",(int)tv.tv_usec/1000);

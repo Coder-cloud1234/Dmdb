@@ -79,7 +79,6 @@ void DmdbMasterReplicationManager::ReplyAllBufferToReplica(DmdbClientContact* cl
 bool DmdbMasterReplicationManager::FullSyncDataToReplica(DmdbClientContact* client) {
     DmdbRepilcationManagerRequiredComponents components;
     GetDmdbRepilcationManagerRequiredComponents(components);
-    // components._client_manager->PauseClients(_full_sync_max_ms*2);
 
     /* We should delete these events to avoid affecting rdb child sending data to replica */
     components._event_manager->DelEvent4Fd(client->GetClientSocket(), EpollEvent::OUT);

@@ -356,11 +356,6 @@ DmdbExistsCommand::~DmdbExistsCommand() {
 bool DmdbExistsCommand::Execute(DmdbClientContact &clientContact) {
     DmdbCommandRequiredComponent components;
     GetDmdbCommandRequiredComponents(components);
-    /*
-    if(components._repl_manager->IsMyMaster(clientContact.GetClientName())) {
-        return true;
-    }
-    */
     std::string msgResult;
     size_t existsNum = 0;
     for(size_t i = 0; i < _parameters.size(); ++i) {
@@ -551,14 +546,6 @@ bool DmdbSaveCommand::Execute(DmdbClientContact &clientContact) {
     DmdbCommandRequiredComponent components;
     GetDmdbCommandRequiredComponents(components);
     std::string msg = "";
-    /*
-    bool isRdbChildRunning = components._server_rdb_manager->IsRDBChildAlive();
-    if(isRdbChildRunning) {
-        msg = "-ERR RDB background saving is running, we can't save rdb data now\r\n";
-        AddExecuteRetToClientIfNeed(msg, clientContact);
-        return false;
-    }
-    */
     bool isSaveOk = components._server_rdb_manager->SaveData(-1, false) == SaveRetCode::SAVE_OK;
     if(!isSaveOk) {
         msg = "-ERR Failed to save rdb data into disk\r\n";
@@ -689,13 +676,7 @@ bool DmdbClientCommand::Execute(DmdbClientContact &clientContact) {
 "kill <option> <value> [option value ...] -- Kill connections. Options are:",
 "     addr <ip:port>                      -- Kill connection made from <ip:port>",
 "pause <timeout>        -- Suspend all Redis clients for <timout> milliseconds."};
-    /*
-    if(_parameters.size() < 1) {
-        msg = FormatHelpMsgFromArray(helpStrVec);
-        clientContact.AddReplyData2Client(msg);
-        return true;
-    }
-    */
+
     if(_parameters.size() == 1 && _parameters[0] == "help") {
         msg = FormatHelpMsgFromArray(helpStrVec);
         AddExecuteRetToClientIfNeed(msg, clientContact);
@@ -886,7 +867,6 @@ bool DmdbRoleCommand::Execute(DmdbClientContact &clientContact) {
         msg = "*3\r\n";
         msg += "$6\r\n";
         msg += "master\r\n";
-        // msg += "$" + std::to_string(std::to_string(components._repl_manager->GetReplOffset()).length()+1) + "\r\n";
         msg += ":" + std::to_string(components._repl_manager->GetReplOffset()) + "\r\n";
         msg += components._repl_manager->GetMultiBulkOfReplicasOrMaster();
     } else {

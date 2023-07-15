@@ -66,7 +66,6 @@ void DmdbConfigFileLoader::LoadConfigFile(std::unordered_map<std::string, std::v
            GetParaValueFromLine(fileLine, paraValue) != LineRet::LINE_OK)
             continue;
         parasMap[paraName] = paraValue;
-        //paraName.clear();
         paraValue.clear();
     }
     configFileStream.close();

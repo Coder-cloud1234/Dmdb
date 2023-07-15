@@ -53,7 +53,6 @@ public:
     bool RemoveRdbChildTmpFile();
     bool KillChildProcessIfAlive();
     bool SaveDatabaseToDisk();
-    // bool LoadDatabaseFromDisk();
     bool LoadDatabase(int fd);
     bool BackgroundSave();
     SaveRetCode SaveData(int fd, bool isBgSave);
@@ -78,7 +77,6 @@ private:
     bool _is_rdb_loading;
     bool _is_plan_to_bgsave_rdb;
     std::string _rdb_file;
-    // std::string _rdb_tmp_file_for_bgsave;
     uint8_t _rdb_version;
     uint64_t _rdb_child_start_ms;
     pid_t _rdb_child_pid;

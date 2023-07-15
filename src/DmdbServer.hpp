@@ -13,8 +13,6 @@
 
 
 
-//#include "config.hpp"
-
 namespace Dmdb {
 
 class DmdbConfigFileLoader;
@@ -64,59 +62,16 @@ private:
     uint8_t _server_version;
 
     static DmdbServer* _self_instance;
-    // pid_t _self_pid;
-    //std::string _base_config_file;
-    
-    // std::string _self_executable_file;
-    // std::vector<std::string> _self_exe_argv;
-    // std::string _self_pid_file;
-    
-    //std::unordered_map<std::string, DmdbCommand*> _dmdb_commands;
     
     bool _plan_to_shutdown;
-
-    // time_t _server_start_time;
-
-    /*
-    long long _processed_commands_num;
-    long long _received_connections_num;
-    long long _rejected_connections_num;
-    long long _expired_keys_num;
-    long long _keys_hit_num;
-    long long _keys_miss_num;
-    size_t _used_peak_memory_size;
-    long long _full_sync_num;
-    long long _partial_sync_ok_num;
-    long long _partial_sync_failed_num;
-    long long _net_input_size;
-    long long _net_output_size;
-    */
     
     bool _is_preamble;
     bool _is_daemonize;
     
-    /*
-    bool _is_aof_enabled;
-    std::string _aof_file;
-    int _aof_fd;
-    pid_t _aof_child_pid;
-    std::string _aof_buf_for_main_process;
-    time_t _aof_rewrite_start_time;
-    time_t _last_aof_rewrite_time_cost;
-    int _last_aof_bg_rewrite_status;
- 
- 
-    time_t _last_rdb_save_ok_time;
-    time_t _last_bgsave_start_time;
-    bool _is_last_bgsave_ok;
-    */
-    // std::string _server_log_file;
-    // bool _is_sys_log_enabled;
     bool _is_master_role;
     
     unsigned long long _memory_max_available_size;
     bool _is_cluster_mode;
-    // DmdbServerTerminateSignalHandler* _terminate_signal_handler;
     DmdbConfigFileLoader* _base_config_file_loader;
     DmdbClusterManager* _cluster_manager;
     DmdbClientManager* _client_manager;
