@@ -3,7 +3,7 @@
 Distributed memory database implemented by C++. This program used redis 5 for reference.
 The goal for developing this project is to reduce maintenance complexity and provide an
 easier way for you to understand how memory database works. You can use redis-cli to 
-connect to this database server. Now we have implemented the follow commands for clients:
+connect to this database server. Now we have implemented the follow commands for clients:  
 1.AUTH  
 2.MULTI/EXEC  
 3.SET  
@@ -38,7 +38,7 @@ According to the result, we can see Dmdb has similar performance as redis 5.
 
 ## 2. Usage
 Step1: Download this project  
-Step2: Enter this project directory and execute "cmake" command  
+Step2: Enter this project directory and execute "cmake ./" command  
 Step3: Execute "make" command  
 Step4: Start the server with "./DmdbServer xxx.config" command  
 Notice: Now Dmdb only supports linux platform. master.config and replica.config are an example
