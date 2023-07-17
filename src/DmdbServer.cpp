@@ -254,6 +254,8 @@ bool DmdbServer::LoadDataFromDisk() {
 
 
 bool DmdbServer::StartServer() {
+    std::cout << "Dmdb server is starting, please wait......" << std::endl;
+    _server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE, "Dmdb server is starting");
     srand(time(nullptr));
     SetupSignalHandler(DmdbServerTerminateSignalHandler::TerminateSignalHandle);
     if(_is_master_role)
@@ -262,6 +264,9 @@ bool DmdbServer::StartServer() {
         _repl_manager->FullSyncFromMater();
     if(!_client_manager->StartToListenIPV4())
         return false;
+    std::cout << "Dmdb server started successfully!" << std::endl;
+    std::cout << "Port: " << _client_manager->GetPortForClient() << std::endl;
+    _server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::VERBOSE, "Dmdb server started successfully");
     return true;
 }
 

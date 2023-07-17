@@ -38,26 +38,35 @@ size_t DmdbClientManager::GetInBufMaxSizeForClient() {
 
 
 bool DmdbClientManager::StartToListenIPV4() {
+    DmdbClientManagerRequiredComponent requiredComponents;
+    GetDmdbClientManagerRequiredComponent(requiredComponents);
     int serverIPV4Sock = socket(PF_INET, SOCK_STREAM, 0);
     if(serverIPV4Sock < 0) {
+        requiredComponents._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::WARNING, 
+                                                            "Failed to create socket! Error info: %s",
+                                                            strerror(errno));
         DmdbUtil::ServerHandleStartListenFailure(0);
         return false;
     }
     struct sockaddr_in address;
     bzero(&address, sizeof(address));
     address.sin_family = AF_INET;
-    DmdbClientManagerRequiredComponent requiredComponents;
-    GetDmdbClientManagerRequiredComponent(requiredComponents);    
     inet_pton(AF_INET, requiredComponents._server_ipv4.c_str(), &address.sin_addr);
     address.sin_port = htons(_port_for_client);
     int ret = bind(serverIPV4Sock, (struct sockaddr*)(&address), sizeof(address));
     if(ret == -1) {
+        requiredComponents._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::WARNING, 
+                                                            "Failed to bind! Error info: %s",
+                                                            strerror(errno));
         DmdbUtil::ServerHandleStartListenFailure(serverIPV4Sock);
         return false;
     }
 
     ret = listen(serverIPV4Sock, requiredComponents._server_tcp_backlog);
     if(ret == -1) {
+        requiredComponents._server_logger->WriteToServerLog(DmdbServerLogger::Verbosity::WARNING, 
+                                                            "Failed to listen! Error info: %s",
+                                                            strerror(errno));        
         DmdbUtil::ServerHandleStartListenFailure(serverIPV4Sock);
         return false;
     }
